@@ -1,0 +1,18 @@
+# Local state and secrets - never commit
+.env
+.env.*
+*.local.*
+config.yaml
+state.json
+mcp-auth.json
+*.token
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
