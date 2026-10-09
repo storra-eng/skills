@@ -61,7 +61,7 @@ docs/                               threat model, OpenClaw notes, Claude Code no
 - A Granola account with its MCP server connected to your agent host (`https://mcp.granola.ai/mcp`).
 - A Linear workspace with Linear's MCP server connected (`https://mcp.linear.app/mcp`).
 - A chat surface for approval cards (Slack is what this was built around) and a way for a human to approve.
-- Python 3.9+ for the pre-check script. No packages.
+- Python 3.9+ for the pre-check script (CI runs 3.9 and 3.12). No packages.
 
 ## Configure
 

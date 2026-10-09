@@ -37,7 +37,8 @@ has, and `scripts/granola_precheck.py` reads its `handled` list to decide whethe
 - **Bound it.** Keep the most recent 100 `handled` entries. The file must be the same size in a year as today. Never
   read anything whose size grows with your own history.
 - `title` and `start` exist only to match a sibling note that arrives later. They are meeting content: keep the file
-  private, and keep a `skipped: personal` meeting's title out of it (store `"title": null`).
+  private, and keep a `skipped: personal` meeting's title out of it (store `"title": null`). Known limit: a later sibling note of such
+  a meeting cannot be matched, so it is judged and skipped again - a wasted run, but no personal content is stored.
 - A `skipped` outcome carries a short reason and no meeting content.
 - Write the file inside your working directory or the configured path, never under a world-readable temp directory:
   it is a record of someone's calendar.

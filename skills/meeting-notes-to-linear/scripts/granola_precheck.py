@@ -33,7 +33,8 @@ Configuration (flag, then environment):
     --auth-file / MCP_AUTH_FILE      JSON file holding the OAuth tokens (see below)
     --auth-key  / MCP_AUTH_SERVER    key of the Granola entry in that file (default "granola")
     GRANOLA_ACCESS_TOKEN             a bearer token directly, instead of a file
-    GRANOLA_MCP_URL                  override the MCP endpoint (https only, or loopback for tests)
+    GRANOLA_MCP_URL                  MCP endpoint for GRANOLA_ACCESS_TOKEN only (https, or loopback for tests);
+                                     a token read from a file goes only to that file's serverUrl
     --state     / MN2L_STATE         state file listing handled meetings (see below)
     --min-age   / PRECHECK_MIN_AGE_MIN   minutes since a meeting STARTED before it counts as new (default 30).
                                      The script has no end time, so this is a heuristic: set it above your
@@ -75,7 +76,7 @@ MEETING_TAG_RE = re.compile(r'<meeting\b((?:[^>"]|"[^"]*")*)>', re.S)
 ATTR_RE = re.compile(r'([\w:.-]+)\s*=\s*"([^"]*)"')
 COUNT_RE = re.compile(r'<meetings_data\b[^>]*?\bcount="(\d+)"')
 # Anything that is not shaped like an opaque id is a parse we do not trust.
-ID_RE = re.compile(r"^[A-Za-z0-9_-]{6,}$")
+ID_RE = re.compile(r"[A-Za-z0-9_-]{6,}\Z")
 MONTHS = {m: i for i, m in enumerate(
     ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1)}
 DATE_RE = re.compile(
@@ -101,6 +102,8 @@ def parse_instant(human):
         return None
     mon = MONTHS.get(mon.title())
     if not mon:
+        return None
+    if not 1 <= int(hour) <= 12 or int(minute) > 59:
         return None
     hour = int(hour) % 12 + (12 if half.upper() == "P" else 0)
     offset = dt.timedelta(hours=int(off_h or 0), minutes=int(off_m or 0))
@@ -152,7 +155,9 @@ def load_token(auth_file=None, auth_key="granola", env=None, now=None):
         exp_s = exp / 1000 if exp > 1e12 else exp
         if exp_s - now < EXPIRY_SKEW_SEC:
             raise Fail("token-expired")
-    url = env.get("GRANOLA_MCP_URL") or entry.get("serverUrl") or DEFAULT_URL
+    # GRANOLA_MCP_URL deliberately does not apply here: a token read from a file is only ever sent to the
+    # server that file says issued it, never to an endpoint a stray environment variable names.
+    url = entry.get("serverUrl") or DEFAULT_URL
     if not isinstance(url, str):
         raise Fail("url-not-https")
     return access, check_url(url)
@@ -247,7 +252,14 @@ def parse_meetings(text, now):
     someone other than the signed-in account. Raises Fail unless the reply is positively understood."""
     if "<meetings_data" not in text:
         raise Fail("no-meetings-wrapper")
-    tags = [dict(ATTR_RE.findall(m.group(1))) for m in top_level_meeting_tags(text)]
+    tags = []
+    for m in top_level_meeting_tags(text):
+        pairs = ATTR_RE.findall(m.group(1))
+        # A repeated attribute name (for example from an unescaped quote in a title) would let a later
+        # value silently override `id`, `date` or `captured_by_me`. Refuse rather than pick one.
+        if len({k for k, _ in pairs}) != len(pairs):
+            raise Fail("duplicate-attribute")
+        tags.append(dict(pairs))
     # count= is REQUIRED, not merely checked when present. It is the second witness that the tag
     # regex still matches the reply: without it, a renamed tag or a dropped attribute parses as zero
     # meetings and reports an idle day from a reply this script did not understand. A genuinely empty

@@ -35,7 +35,8 @@ What the docs say, and what this setup relies on:
 
 So keep **two settings files** and pass the right one to each kind of run with `--settings`, rather than one shared
 `.claude/settings.json` (a `deny` there would also block the FILE phase). Replace the paths and server names with
-yours.
+yours. Note the **double** leading slash in file rules: per the permissions docs a single leading slash is relative to the
+settings source, and `//path` is how an absolute path is written.
 
 **`proposer.settings.json`** - every scheduled or headless PROPOSE run. Allow the read tools and the state file by
 name, deny the Linear write surface:
@@ -47,7 +48,7 @@ name, deny the Linear write surface:
       "mcp__granola__list_meetings", "mcp__granola__get_meetings", "mcp__granola__get_meeting_transcript",
       "mcp__linear__list_issues", "mcp__linear__get_issue", "mcp__linear__list_projects",
       "mcp__linear__list_issue_labels", "mcp__linear__list_users", "mcp__linear__list_teams",
-      "Read(/path/to/config.yaml)", "Read(/path/to/state.json)", "Edit(/path/to/state.json)"
+      "Read(//path/to/config.yaml)", "Read(//path/to/state.json)", "Edit(//path/to/state.json)"
     ],
     "deny": [
       "mcp__linear__save_issue", "mcp__linear__save_comment", "mcp__linear__save_project",
@@ -71,7 +72,7 @@ in an unattended run the allow list is what protects you, because anything not a
     "allow": [
       "mcp__linear__list_issues", "mcp__linear__get_issue", "mcp__linear__list_projects",
       "mcp__linear__list_issue_labels", "mcp__linear__list_users", "mcp__linear__list_teams",
-      "Read(/path/to/config.yaml)", "Read(/path/to/state.json)", "Edit(/path/to/state.json)"
+      "Read(//path/to/config.yaml)", "Read(//path/to/state.json)", "Edit(//path/to/state.json)"
     ],
     "ask": ["mcp__linear__save_issue", "mcp__linear__save_comment"]
   }

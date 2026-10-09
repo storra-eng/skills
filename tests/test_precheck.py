@@ -54,6 +54,11 @@ class ParseInstant(unittest.TestCase):
     def test_no_offset_is_none_not_utc(self):
         self.assertIsNone(pc.parse_instant("Jan 15, 2030 9:00 AM"))
 
+    def test_impossible_clock_values_are_none(self):
+        self.assertIsNone(pc.parse_instant("Jan 15, 2030 13:00 PM GMT+0"))
+        self.assertIsNone(pc.parse_instant("Jan 15, 2030 0:30 AM GMT+0"))
+        self.assertIsNone(pc.parse_instant("Jan 15, 2030 9:75 AM GMT+0"))
+
     def test_garbage_is_none(self):
         self.assertIsNone(pc.parse_instant("yesterday-ish"))
         self.assertIsNone(pc.parse_instant(None))
@@ -98,6 +103,17 @@ class ParseMeetings(unittest.TestCase):
     def test_future_date_is_unknown_age(self):
         _, _, rows = pc.parse_meetings(reply(meeting(ID1, "Jan 16, 2030 9:00 AM GMT+0")), NOW)
         self.assertEqual(rows, [(ID1, None)])
+
+    def test_duplicate_attribute_fails_rather_than_overriding_the_id(self):
+        text = ('<meetings_data count="1"><meeting id="%s" title="a" id="%s" date="x"></meeting></meetings_data>'
+                % (ID1, ID2))
+        with self.assertRaisesRegex(pc.Fail, "duplicate-attribute"):
+            pc.parse_meetings(text, NOW)
+
+    def test_id_with_trailing_newline_is_refused(self):
+        text = '<meetings_data count="1"><meeting id="%s\n" date="x"/></meetings_data>' % ID1
+        with self.assertRaisesRegex(pc.Fail, "unparseable-meeting-id"):
+            pc.parse_meetings(text, NOW)
 
     def test_attribute_containing_angle_bracket_still_parses(self):
         text = reply(meeting(ID1, title="a > b"))
@@ -199,13 +215,13 @@ class Token(unittest.TestCase):
         tok, url = pc.load_token(None, env={"GRANOLA_ACCESS_TOKEN": FAKE_TOKEN})
         self.assertEqual((tok, url), (FAKE_TOKEN, pc.DEFAULT_URL))
 
-    def test_expired_in_seconds_and_milliseconds(self):
-        with self.assertRaisesRegex(pc.Fail, "token-expired"):
-            pc.load_token(self.auth(expiresAt=1000 + 30), env={}, now=1000)
-        with self.assertRaisesRegex(pc.Fail, "token-expired"):
-            pc.load_token(self.auth(expiresAt=(1000 + 30) * 1000 + 10**12), env={},
-                          now=(1000 + 30 + 10**9 + 10**9))
-        pc.load_token(self.auth(expiresAt=(10**9 + 500) * 1000), env={}, now=10**9)
+    def test_expiry_boundary_in_seconds_and_milliseconds(self):
+        now = 1_800_000_000          # epoch seconds, well below the 1e12 milliseconds threshold
+        skew = pc.EXPIRY_SKEW_SEC
+        for unit in (1, 1000):
+            with self.assertRaisesRegex(pc.Fail, "token-expired"):
+                pc.load_token(self.auth(expiresAt=(now + skew - 1) * unit), env={}, now=now)
+            pc.load_token(self.auth(expiresAt=(now + skew + 1) * unit), env={}, now=now)
 
     def test_absent_expiry_is_not_expired(self):
         pc.load_token(self.auth(), env={}, now=10**10)
@@ -213,6 +229,10 @@ class Token(unittest.TestCase):
     def test_unreadable_expiry_fails(self):
         with self.assertRaisesRegex(pc.Fail, "token-expiry-unreadable"):
             pc.load_token(self.auth(expiresAt="soon"), env={})
+
+    def test_env_url_override_never_redirects_a_file_token(self):
+        _, url = pc.load_token(self.auth(), env={"GRANOLA_MCP_URL": "https://elsewhere.example.test/mcp"}, now=1000)
+        self.assertEqual(url, "https://mcp.example.test/mcp")
 
     def test_custom_auth_key(self):
         p = write_json(self.tmp.name, "a.json", {"other": {"tokens": {"accessToken": FAKE_TOKEN}}})
@@ -398,6 +418,47 @@ class EndToEnd(unittest.TestCase):
 
 
 class MainEntryPoint(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), FakeGranola)
+        cls.url = f"http://127.0.0.1:{cls.server.server_address[1]}/mcp"
+        threading.Thread(target=cls.server.serve_forever, daemon=True).start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+
+    def run_main(self, listing, state_handled, extra=()):
+        """Run main() against the loopback server and return (exit code, stdout)."""
+        import contextlib
+        import io
+        FakeGranola.mode = "json"
+        FakeGranola.list_text = listing
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        state = write_json(tmp.name, "state.json", {"handled": state_handled})
+        names = ("GRANOLA_ACCESS_TOKEN", "GRANOLA_MCP_URL", "MN2L_STATE")
+        saved = {k: os.environ.get(k) for k in names}
+        os.environ.update({"GRANOLA_ACCESS_TOKEN": FAKE_TOKEN, "GRANOLA_MCP_URL": self.url,
+                           "MN2L_STATE": state})
+        buf = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buf):
+                rc = pc.main(list(extra))
+        finally:
+            for k, v in saved.items():
+                os.environ.pop(k, None) if v is None else os.environ.__setitem__(k, v)
+        return rc, buf.getvalue()
+
+    def test_exit_10_when_there_is_work(self):
+        rc, out = self.run_main(reply(meeting(ID1, "Jan 1, 2000 9:00 AM GMT+0")), [])
+        self.assertEqual((rc, out.splitlines()[-1]), (10, "VERDICT work"))
+
+    def test_exit_0_when_everything_is_handled(self):
+        rc, out = self.run_main(reply(meeting(ID1, "Jan 1, 2000 9:00 AM GMT+0")), [ID1])
+        self.assertEqual((rc, out.splitlines()[-1]), (0, "VERDICT idle"))
+
     def test_no_auth_configured_exits_1_and_prints_one_fail_line(self):
         saved = {k: os.environ.pop(k, None) for k in ("GRANOLA_ACCESS_TOKEN", "MCP_AUTH_FILE")}
         try:
