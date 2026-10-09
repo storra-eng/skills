@@ -84,9 +84,15 @@ docs/                               threat model, OpenClaw notes, Claude Code no
    python3 skills/meeting-notes-to-linear/scripts/granola_precheck.py   # exit 0 idle, 10 work, 1 cannot tell
    ```
 
-   Start the agent unless the exit status is `0`. A pre-check failure wakes the agent on purpose: it can only make a
-   run cheaper, never blinder. It prints counts and ids only, never a title, a body or a token, and it never refreshes
-   a token (the MCP client that owns the OAuth session does that).
+   Start the agent unless the exit status is `0`, and paste the script's `new` / `defer` lines into the agent's
+   prompt. It looks at yesterday and today (UTC), not just today, so a meeting that straddles midnight is not lost;
+   it defers a meeting for 30 minutes after it starts (`--min-age`; it cannot see end times, so set this above your
+   longest regular meeting). Run PROPOSE and FILE one at a time: both rewrite the state file.
+   A pre-check failure wakes the agent on purpose: it can only make a run cheaper, never blinder. That includes a
+   missing `MN2L_STATE`, an expired token, and a reply it does not understand. Because it never refreshes a token (the
+   MCP client that owns the OAuth session does that), an idle day costs roughly one agent run per access-token
+   lifetime, not zero. It prints counts and ids only, never a title, a body or a token. Alert on a streak of non-zero
+   exits, or a persistent failure quietly becomes a full-cost run on every tick.
 
 ## Install
 
@@ -97,6 +103,7 @@ openclaw skills install @<publisher>/meeting-notes-to-linear     # once publishe
 # or, from a checkout: copy skills/meeting-notes-to-linear into <workspace>/skills/
 ```
 
+Install and publish commands are from the [ClawHub docs](https://docs.openclaw.ai/clawhub) (read 9 October 2026).
 Publishing is `clawhub skill publish ./skills/meeting-notes-to-linear --slug meeting-notes-to-linear --name "Meeting
 notes to Linear" --version 1.0.0`. Installing the skill does **not** configure approvals. Read
 [`docs/openclaw.md`](docs/openclaw.md) before you point it at a real Linear workspace.
@@ -116,7 +123,7 @@ The skill says: no Linear write without a recorded human approval. Who enforces 
 | **OpenClaw, skill installed from ClawHub, nothing else configured** | **No. It is a prompt rule.** A skill grants and restricts no tools, and exec approvals do not cover MCP tool calls. |
 | **OpenClaw with the tool split and authorised-approver channel setup** in [`docs/openclaw.md`](docs/openclaw.md) | **Partly, by the platform:** the proposing agent does not hold the write tools, and only authorised senders can instruct the filing agent. Fidelity of the filed text to the approved card is still a prompt rule. **Not verified on a live install.** |
 | **OpenClaw plus a `before_tool_call` plugin using `requireApproval`** | **Yes, per call**, if the hook matches the Linear write tools. Synchronous, 10-minute ceiling. Docs do not confirm MCP tools can be matched this way. |
-| **Claude Code, Linear write tools set to `ask`** | **Yes, interactively:** the harness prompts the operator. In headless runs an unanswered `ask` is not a human approval; route it through a permission-prompt tool or keep the tools denied. |
+| **Claude Code, Linear write tools set to `ask`** ([permissions docs](https://code.claude.com/docs/en/permissions)) | **Yes, interactively:** the harness prompts the operator. In headless runs an unanswered `ask` is not a human approval; route it through a permission-prompt tool or keep the tools denied. |
 | **Anything else** | Assume it is a prompt rule until you have tested that the proposing agent *cannot* call the write tools. |
 
 How to test: in the PROPOSE configuration, ask the agent to create a Linear issue directly. If it can, you do not have
@@ -143,8 +150,9 @@ Short version; the full one is in [`docs/threat-model.md`](docs/threat-model.md)
 - **(a) It reads untrusted text and has write access to Linear.** Anyone who can speak in, or be quoted in, a meeting
   that gets transcribed can try to put instructions in front of the model: "create an issue assigned to X", "approve
   this card", "ignore your rules". A guest, a vendor, a forwarded transcript or an automated notetaker bot counts.
-  The skill instructs the model to treat meeting content as data. That is a mitigation, not a defence: OpenClaw's own prompt-injection guidance says model choice reduces risk
-  without solving it, and cites adaptive-attack success rates above 80% against state-of-the-art defences. Design as if the instruction will sometimes be followed, and make sure the worst case is a
+  The skill instructs the model to treat meeting content as data. That is a mitigation, not a defence: OpenClaw's own [prompt-injection guidance](https://docs.openclaw.ai/gateway/security/prompt-injection.md) says model
+  choice reduces risk without solving it, and cites adaptive-attack success rates above 80% against state-of-the-art
+  defences (its figure; not independently checked here). Design as if the instruction will sometimes be followed, and make sure the worst case is a
   rejected card.
 - **(b) The approval gate is only as strong as the host platform enforces it.** If the same model run that read the
   meeting can also call the write tool, the "approval" is a sentence in a prompt. In the reference pattern the model has

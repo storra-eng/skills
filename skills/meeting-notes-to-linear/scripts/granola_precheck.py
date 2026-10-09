@@ -7,7 +7,7 @@ when this script says there is work (or when it cannot tell).
 
 Stdout, on a well-formed answer:
 
-    OK seen=<n> others=<m> new=<k> defer=<d>
+    OK seen=<n> others=<m> new=<k> defer=<d> state=ok|absent
     new <meeting id> <minutes since it started | unknown>
     defer <meeting id> <minutes since it started>
     VERDICT idle | work
@@ -35,16 +35,22 @@ Configuration (flag, then environment):
     GRANOLA_ACCESS_TOKEN             a bearer token directly, instead of a file
     GRANOLA_MCP_URL                  override the MCP endpoint (https only, or loopback for tests)
     --state     / MN2L_STATE         state file listing handled meetings (see below)
-    --min-age   / PRECHECK_MIN_AGE_MIN   minutes a meeting must have been running (default 30)
+    --min-age   / PRECHECK_MIN_AGE_MIN   minutes since a meeting STARTED before it counts as new (default 30).
+                                     The script has no end time, so this is a heuristic: set it above your
+                                     longest regular meeting (for example 90) or a long meeting is read half-finished.
     --no-defer                       judge every meeting regardless of age (use on the day's last run)
     --days      / PRECHECK_DAYS      how many UTC days to look back, today included (default 2)
     PRECHECK_HTTP_TIMEOUT            seconds (default 15)
+
+The pre-check cannot refresh a token. If the access token has expired it FAILs, which wakes the agent, and the
+agent's own MCP client refreshes it - so on an idle day expect roughly one paid wake per access-token lifetime.
 
 No auth location is assumed: set one of --auth-file or GRANOLA_ACCESS_TOKEN. The auth file is
 expected to look like `{"granola": {"serverUrl": "...", "tokens": {"accessToken": "...",
 "expiresAt": <epoch seconds or milliseconds>}}}`, which is the shape several MCP clients write.
 
-State file: `{"handled": [...]}` where each entry is either a meeting id or an object with an
+State file (required: no path configured is a FAIL; a path whose file does not exist yet is a first run, reported
+as `state=absent`): `{"handled": [...]}` where each entry is either a meeting id or an object with an
 `ids` list (one meeting can arrive as several notes, one per capturer, and every id must be
 recorded so a sibling is not rediscovered as new). A missing file means nothing is handled yet.
 """
@@ -60,6 +66,7 @@ import urllib.parse
 import urllib.request
 
 DEFAULT_URL = "https://mcp.granola.ai/mcp"
+PROTOCOL_VERSION = "2025-06-18"
 # An access token this close to expiry is treated as expired: the call would race it.
 EXPIRY_SKEW_SEC = 60
 LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
@@ -165,6 +172,7 @@ _OPENER = urllib.request.build_opener(_NoRedirect)
 class Client:
     def __init__(self, access, url, timeout=15.0):
         self.access, self.url, self.timeout, self.session = access, url, timeout, None
+        self.protocol = None   # negotiated MCP protocol version, sent on every request after initialize
 
     def post(self, body, want_id):
         headers = {"Content-Type": "application/json",
@@ -172,6 +180,8 @@ class Client:
                    "Authorization": f"Bearer {self.access}"}
         if self.session:
             headers["Mcp-Session-Id"] = self.session
+        if self.protocol:
+            headers["MCP-Protocol-Version"] = self.protocol
         req = urllib.request.Request(self.url, data=json.dumps(body).encode(),
                                      method="POST", headers=headers)
         try:
@@ -263,9 +273,13 @@ def parse_meetings(text, now):
 
 
 def load_handled(path):
-    """Set of every meeting id the state file records as handled."""
+    """Set of every meeting id the state file records as handled.
+
+    No configured path is a FAIL: with nothing to compare against, every meeting in the window would
+    read as new on every tick and the zero-token saving would silently disappear. A configured path
+    whose file does not exist yet is the legitimate first run, and means nothing is handled."""
     if not path:
-        return set()
+        raise Fail("state-missing (no state file configured)")
     try:
         with open(path) as f:
             state = json.load(f)
@@ -304,11 +318,13 @@ def classify(rows, handled, min_age, defer=True):
 
 def list_meetings_text(client, today, days):
     init = client.post({"jsonrpc": "2.0", "id": 1, "method": "initialize",
-                        "params": {"protocolVersion": "2025-06-18", "capabilities": {},
+                        "params": {"protocolVersion": PROTOCOL_VERSION, "capabilities": {},
                                    "clientInfo": {"name": "meeting-notes-to-linear-precheck",
                                                   "version": "1.0"}}}, 1)
     if "error" in init or "result" not in init:
         raise Fail("initialize-refused")
+    negotiated = init["result"].get("protocolVersion") if isinstance(init["result"], dict) else None
+    client.protocol = negotiated if isinstance(negotiated, str) and negotiated else PROTOCOL_VERSION
     try:
         client.post({"jsonrpc": "2.0", "method": "notifications/initialized"}, None)
     except Fail as e:
@@ -349,11 +365,12 @@ def run(args, env=None, now=None):
     now = now or dt.datetime.now(dt.timezone.utc)
     access, url = load_token(args.auth_file, args.auth_key, env, now.timestamp())
     handled = load_handled(args.state)
+    state_note = "ok" if os.path.exists(args.state) else "absent"
     client = Client(access, url, float(env.get("PRECHECK_HTTP_TIMEOUT", "15")))
     text = list_meetings_text(client, now.date(), args.days)
     seen, others, rows = parse_meetings(text, now)
     new, deferred = classify(rows, handled, args.min_age, defer=not args.no_defer)
-    lines = [f"OK seen={seen} others={others} new={len(new)} defer={len(deferred)}"]
+    lines = [f"OK seen={seen} others={others} new={len(new)} defer={len(deferred)} state={state_note}"]
     lines += [f"new {mid} {'unknown' if age is None else age}" for mid, age in new]
     lines += [f"defer {mid} {age}" for mid, age in deferred]
     lines.append("VERDICT work" if new else "VERDICT idle")

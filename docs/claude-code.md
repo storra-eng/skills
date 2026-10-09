@@ -19,14 +19,26 @@ session.
 
 ## The gate in Claude Code
 
-Claude Code's permission system is enforced by the harness, not by the model, which makes it a real gate. Rules are
-`mcp__<server>__<tool>` (with the server names above). Two facts shape the setup: **`deny` always beats `allow`**, and a
-tool that needs a prompt in a non-interactive run is refused because nobody can answer it. So keep **two settings
-files** and pass the right one to each kind of run with `--settings` (check the flag on your version), rather than one
-shared `.claude/settings.json`.
+Sources, read on **9 October 2026**: [Permissions](https://code.claude.com/docs/en/permissions) and
+[CLI reference](https://code.claude.com/docs/en/cli-reference). Flag availability varies by version; check yours.
 
-**`proposer.settings.json`** - for every scheduled or headless PROPOSE run. Allow the read tools by name and deny the
-Linear write surface, so the run cannot write whatever the model is told:
+What the docs say, and what this setup relies on:
+
+- "Permission rules are enforced by Claude Code, not by the model." That is what makes them a gate where a prompt
+  rule is not.
+- Rules are evaluated **deny, then ask, then allow**; an allow rule cannot carve an exception out of a deny rule.
+- MCP tools are `mcp__<server>__<tool>`; `mcp__<server>__*` matches every tool of a server.
+- `--settings <file or JSON>` layers extra settings over the normal files for one run.
+- `--permission-prompt-tool <mcp tool>` answers permission prompts in non-interactive mode, and
+  `--permission-prompts none` makes unanswerable prompts deny instead.
+- `PreToolUse` hooks can inspect a call before it runs, but they do not override deny or ask rules.
+
+So keep **two settings files** and pass the right one to each kind of run with `--settings`, rather than one shared
+`.claude/settings.json` (a `deny` there would also block the FILE phase). Replace the paths and server names with
+yours.
+
+**`proposer.settings.json`** - every scheduled or headless PROPOSE run. Allow the read tools and the state file by
+name, deny the Linear write surface:
 
 ```json
 {
@@ -34,7 +46,8 @@ Linear write surface, so the run cannot write whatever the model is told:
     "allow": [
       "mcp__granola__list_meetings", "mcp__granola__get_meetings", "mcp__granola__get_meeting_transcript",
       "mcp__linear__list_issues", "mcp__linear__get_issue", "mcp__linear__list_projects",
-      "mcp__linear__list_issue_labels", "mcp__linear__list_users", "mcp__linear__list_teams"
+      "mcp__linear__list_issue_labels", "mcp__linear__list_users", "mcp__linear__list_teams",
+      "Read(/path/to/config.yaml)", "Read(/path/to/state.json)", "Edit(/path/to/state.json)"
     ],
     "deny": [
       "mcp__linear__save_issue", "mcp__linear__save_comment", "mcp__linear__save_project",
@@ -46,23 +59,30 @@ Linear write surface, so the run cannot write whatever the model is told:
 }
 ```
 
-Also allow whichever chat tool posts the cards (for example a Slack send-message tool), and nothing broader.
+Also allow whichever tool posts the cards (for example a Slack send-message tool), and nothing broader. Run it with
+`--permission-prompts none` so any prompt is a denial. The deny list is a snapshot, since Linear adds tools over time:
+in an unattended run the allow list is what protects you, because anything not allowed is refused.
 
-The deny list is a snapshot: Linear adds tools over time. In a headless run the allow list is what protects you,
-because anything not allowed is refused. In an interactive session, unlisted tools prompt; read every prompt.
-
-**`filer.settings.json`** - for the FILE phase only. Allow the same read tools; put the two write tools on `ask`:
+**`filer.settings.json`** - the FILE phase only. The same read and state-file allows, plus the two write tools on `ask`:
 
 ```json
-{ "permissions": { "ask": ["mcp__linear__save_issue", "mcp__linear__save_comment"] } }
+{
+  "permissions": {
+    "allow": [
+      "mcp__linear__list_issues", "mcp__linear__get_issue", "mcp__linear__list_projects",
+      "mcp__linear__list_issue_labels", "mcp__linear__list_users", "mcp__linear__list_teams",
+      "Read(/path/to/config.yaml)", "Read(/path/to/state.json)", "Edit(/path/to/state.json)"
+    ],
+    "ask": ["mcp__linear__save_issue", "mcp__linear__save_comment"]
+  }
+}
 ```
 
-- **Run FILE interactively** (an approver at the keyboard, passing the approved cards in the prompt). Each write prompts
-  with its arguments, which is a per-issue human approval enforced by the harness. Read the arguments, not the model's
-  summary of them.
-- **Headless FILE** needs something that answers the prompt with a real decision, such as a permission-prompt tool that
-  asks an approver in chat and returns their answer. An auto-answered or unanswered prompt is not a human approval.
-  Check that your version supports this before relying on it, and test that a denied prompt files nothing.
+- **Run FILE interactively** (an approver at the keyboard, approved cards in the prompt). Each write prompts with its
+  arguments, which is a per-issue human approval enforced by the harness. Read the arguments, not the model's summary.
+- **Headless FILE** needs something that answers the prompt with a real decision: `--permission-prompt-tool` pointing at
+  an MCP tool that asks an approver in chat and returns their answer. An auto-answered prompt is not a human approval.
+  Test that a denied prompt files nothing.
 - **A per-call equivalent to the plugin approach on OpenClaw:** a `PreToolUse` hook on the two write tools that exits
   non-zero unless the card id in the call appears in an approved-ids file written by something other than the model
   (for example a chat handler run by a person). This repository does not ship one.
@@ -71,7 +91,20 @@ because anything not allowed is refused. In an interactive session, unlisted too
 
 ## Scheduling
 
-Run `scripts/granola_precheck.py` from cron or launchd first; start `claude -p --settings proposer.settings.json` only
-when it exits with anything other than `0`. Count consecutive non-zero exits and alert on a streak: the pre-check fails
-open by design, so a persistent failure silently becomes a full-cost run every tick. Launch the FILE phase as a separate
-invocation with `filer.settings.json`, after an approval, passing the approved card text in the prompt.
+Run `scripts/granola_precheck.py` from cron or launchd first.
+
+1. **Exit 0**: stop. **Anything else**: start the agent. The pre-check fails open by design.
+2. **Pass its output into the prompt.** The `new <id>` and `defer <id>` lines are how the agent learns which meetings
+   to leave alone for now; without them it re-lists Granola and may judge a half-finished meeting.
+   ```bash
+   out=$(python3 skills/meeting-notes-to-linear/scripts/granola_precheck.py); rc=$?
+   [ "$rc" -eq 0 ] && exit 0
+   claude -p --settings proposer.settings.json --permission-prompts none \
+     "Run the meeting-notes-to-linear PROPOSE phase. Pre-check output:
+   $out"
+   ```
+3. **Serialise runs** with a lock (`flock` or equivalent): PROPOSE and FILE both read and rewrite the state file.
+4. **Alert on a streak** of consecutive non-zero pre-check exits. A persistent failure (an expired token nothing
+   refreshes, a changed reply shape) otherwise silently becomes a full-cost run every tick.
+5. Launch the FILE phase as a separate invocation with `filer.settings.json`, after an approval, passing the approved
+   card text and approval id in the prompt.

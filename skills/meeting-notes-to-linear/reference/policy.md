@@ -50,7 +50,9 @@ Processing both files the same card twice and the reviewer cannot tell which dup
 - Same **title** and same **start time** (to the minute) means one meeting, however many ids it has.
 - Pick **one note to work from** - normally the one with a summary worth reading - and ignore the rest.
 - Record **every id** on one state entry (`ids: [processed, sibling...]`), so a later run does not rediscover the
-  sibling as new work. The one you processed goes first.
+  sibling as new work. The one you processed goes first. The entry also stores the meeting's `title` and `start`, so a
+  sibling that arrives in a *later* run (a teammate's note syncing after yours) can be matched to it: if a new id has
+  the same title and start as a handled entry, add the id to that entry and propose nothing.
 - Never merge two meetings that merely share a title. A recurring standup has the same title every day; the start
   time makes them the same meeting.
 

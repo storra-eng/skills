@@ -39,8 +39,12 @@ report `status=error detail=linear-write-unavailable`, change nothing, and leave
 - **State** at `$MN2L_STATE` (JSON; see `reference/state-file.md`): meetings already handled and cards awaiting a
   decision. It is the only memory you have. If it exists but is unparseable, stop with `status=error`: treating it as
   empty would re-propose everything.
-- **Host-supplied decisions** (FILE phase): an `APPROVED` list, each entry with the card id and the approved card text,
-  taken from the host's approval store. File exactly that text.
+- **Host-supplied decisions** (FILE phase): an `APPROVED` list, each entry with the card id, the approved card text and
+  the host's approval id (use the card id if the host has none), taken from the host's approval store. File exactly
+  that text, and use that approval id in the attribution line. Never invent one.
+- **Pre-check output** (PROPOSE phase, optional): the host may paste the pre-check's `new <id>` and `defer <id>`
+  lines into the prompt. Treat `defer` ids as the DEFER list below. With no such lines, treat any meeting that
+  started under 30 minutes ago as deferred yourself.
 
 ## PROPOSE
 
@@ -50,8 +54,10 @@ report `status=error detail=linear-write-unavailable`, change nothing, and leave
    read - zero means either a quiet day or an account that could not see the meetings, and only `seen` tells them
    apart. If every meeting is already in the state file, stop: `RESULT: status=nothing-new ...`. No further calls.
    (The host may already have run `scripts/granola_precheck.py` and only started you because it found something.)
-1. **Confirm what is new** against the state file. Skip meetings listed in the prompt's `DEFER` list: they started too
-   recently to be finished; do not judge them and do not record them.
+1. **Confirm what is new** against the state file. Skip deferred meetings (the pre-check's `defer` ids): they started
+   too recently to be finished; do not judge them and do not record them. If a note you are about to read looks
+   unfinished (empty or mid-sentence summary, a meeting still in progress), treat it as deferred too: a start-time
+   rule cannot know when a meeting ends.
 2. **Collapse duplicate captures** of one meeting (same title and same start time to the minute). Read one, record
    every id.
 3. **Scope filter.** Drop anything that is not company business (`reference/policy.md`). Record a skipped meeting

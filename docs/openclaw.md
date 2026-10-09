@@ -114,5 +114,7 @@ tap-to-confirm.
 
 Use OpenClaw's scheduler (or any external one) to run `scripts/granola_precheck.py` first and start the proposer only on
 exit status other than `0`. The docs I read do not describe a conditional-run mechanism; wrapping the agent start in a
-shell script is the portable way. The pre-check fails open by design, so also count consecutive non-zero exits and
-alert on a streak; otherwise a persistent failure silently becomes a full-cost run every tick.
+shell script is the portable way, and that wrapper should (a) pass the pre-check's `new` / `defer` lines into the
+agent's prompt, (b) take a lock so PROPOSE and FILE never overlap on the state file, and (c) count consecutive
+non-zero exits and alert on a streak, since the pre-check fails open and a persistent failure otherwise silently
+becomes a full-cost run every tick.

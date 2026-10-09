@@ -39,6 +39,7 @@ limits:                      # caps bound the damage of a manipulated run
 
 issue:
   link_template: "https://notes.granola.ai/d/{meeting_id}"
+  # {approval_id} is supplied by the host with each approved card (the card id if the host has no approval id).
   attribution_template: "Filed by the meeting-notes assistant from {meeting_title}, {date}. Approval: {approval_id}."
   language: "en"             # write cards and issues in this language (e.g. en-GB, en-US)
 

@@ -148,8 +148,9 @@ class State(unittest.TestCase):
     def test_missing_file_means_nothing_handled(self):
         self.assertEqual(pc.load_handled(os.path.join(self.tmp.name, "nope.json")), set())
 
-    def test_no_path_means_nothing_handled(self):
-        self.assertEqual(pc.load_handled(None), set())
+    def test_no_path_configured_fails_rather_than_waking_forever(self):
+        with self.assertRaisesRegex(pc.Fail, "state-missing"):
+            pc.load_handled(None)
 
     def test_strings_and_sibling_objects(self):
         p = write_json(self.tmp.name, "s.json",
@@ -247,6 +248,7 @@ class FakeGranola(http.server.BaseHTTPRequestHandler):
     mode = "json"          # json | sse | redirect | unauthorised | tool-error
     seen_auth = []
     last_args = {}
+    seen_protocol = []
 
     def log_message(self, *a):
         pass
@@ -270,12 +272,14 @@ class FakeGranola(http.server.BaseHTTPRequestHandler):
             return self._send(401, "no")
         method = body.get("method")
         if method == "initialize":
-            return self._send(200, json.dumps({"jsonrpc": "2.0", "id": body["id"], "result": {}}),
+            return self._send(200, json.dumps({"jsonrpc": "2.0", "id": body["id"],
+                                               "result": {"protocolVersion": "2025-03-26"}}),
                               extra={"Mcp-Session-Id": "synthetic-session"})
         if method == "notifications/initialized":
             return self._send(202, "")
         assert self.headers.get("Mcp-Session-Id") == "synthetic-session"
         type(self).last_args = body["params"]
+        type(self).seen_protocol.append(self.headers.get("MCP-Protocol-Version"))
         result = {"isError": True, "content": [{"type": "text", "text": "Rate limit exceeded"}]} \
             if self.mode == "tool-error" else \
             {"content": [{"type": "text", "text": self.list_text}]}
@@ -306,8 +310,9 @@ class EndToEnd(unittest.TestCase):
         self.env = {"GRANOLA_ACCESS_TOKEN": FAKE_TOKEN, "GRANOLA_MCP_URL": self.url}
 
     def run_check(self, state=None, argv=()):
-        args = pc.build_parser(self.env).parse_args(
-            list(argv) + (["--state", state] if state else []))
+        # Default to a state file that does not exist yet: the legitimate first run.
+        state = state or os.path.join(self.tmp.name, "absent-state.json")
+        args = pc.build_parser(self.env).parse_args(list(argv) + ["--state", state])
         return pc.run(args, env=self.env, now=NOW)
 
     def state(self, handled):
@@ -318,14 +323,14 @@ class EndToEnd(unittest.TestCase):
         out, rc = self.run_check()
         self.assertEqual(rc, 10)
         self.assertEqual(out.splitlines(),
-                         ["OK seen=1 others=0 new=1 defer=0", f"new {ID1} 300", "VERDICT work"])
+                         ["OK seen=1 others=0 new=1 defer=0 state=absent", f"new {ID1} 300", "VERDICT work"])
         self.assertEqual(set(FakeGranola.seen_auth), {f"Bearer {FAKE_TOKEN}"})
 
     def test_everything_handled_is_idle(self):
         FakeGranola.list_text = reply(meeting(ID1), meeting(ID2, mine="false"))
         out, rc = self.run_check(self.state([{"ids": [ID1, ID2]}]))
         self.assertEqual(rc, 0)
-        self.assertEqual(out.splitlines(), ["OK seen=2 others=1 new=0 defer=0", "VERDICT idle"])
+        self.assertEqual(out.splitlines(), ["OK seen=2 others=1 new=0 defer=0 state=ok", "VERDICT idle"])
 
     def test_request_asks_for_a_custom_range_spanning_yesterday_to_tomorrow(self):
         FakeGranola.list_text = reply()
@@ -335,6 +340,12 @@ class EndToEnd(unittest.TestCase):
             "time_range": "custom",
             "custom_start": "2030-01-14T00:00:00",
             "custom_end": "2030-01-16T00:00:00"})
+
+    def test_negotiated_protocol_version_is_sent_after_initialize(self):
+        FakeGranola.list_text = reply()
+        FakeGranola.seen_protocol = []
+        self.run_check()
+        self.assertEqual(FakeGranola.seen_protocol, ["2025-03-26"])
 
     def test_days_flag_narrows_and_widens_the_window(self):
         FakeGranola.list_text = reply()
@@ -357,7 +368,7 @@ class EndToEnd(unittest.TestCase):
     def test_empty_day_is_idle(self):
         FakeGranola.list_text = reply()
         out, rc = self.run_check()
-        self.assertEqual((rc, out.splitlines()[0]), (0, "OK seen=0 others=0 new=0 defer=0"))
+        self.assertEqual((rc, out.splitlines()[0]), (0, "OK seen=0 others=0 new=0 defer=0 state=absent"))
 
     def test_sse_reply_is_understood(self):
         FakeGranola.mode = "sse"
@@ -399,6 +410,21 @@ class MainEntryPoint(unittest.TestCase):
             os.environ.update({k: v for k, v in saved.items() if v is not None})
         self.assertEqual(rc, 1)
         self.assertEqual(buf.getvalue().strip(), "FAIL token-missing (no auth configured)")
+
+    def test_missing_state_configuration_exits_1(self):
+        import contextlib
+        import io
+        buf = io.StringIO()
+        saved = os.environ.pop("MN2L_STATE", None)
+        os.environ["GRANOLA_ACCESS_TOKEN"] = FAKE_TOKEN
+        try:
+            with contextlib.redirect_stdout(buf):
+                rc = pc.main([])
+        finally:
+            os.environ.pop("GRANOLA_ACCESS_TOKEN", None)
+            if saved is not None:
+                os.environ["MN2L_STATE"] = saved
+        self.assertEqual((rc, buf.getvalue().strip()), (1, "FAIL state-missing (no state file configured)"))
 
     def test_bad_flags_exit_2(self):
         import contextlib
