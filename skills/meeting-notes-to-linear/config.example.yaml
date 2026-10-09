@@ -1,0 +1,48 @@
+# Copy to a private location, fill in, and point MN2L_CONFIG at it. Never commit your real copy.
+# Everything here is yours to supply: the skill hardcodes no team, project, label or person.
+
+linear:
+  team: "ENG"                # team key the issues are filed under
+  projects:                  # the only projects a card may name; ids are what the write call gets
+    - name: "Platform"
+      id: "00000000-0000-4000-8000-0000000000a1"
+      use_for: "backend, infrastructure, data pipeline work"
+    - name: "Web app"
+      id: "00000000-0000-4000-8000-0000000000a2"
+      use_for: "customer-facing web UI work"
+  labels:                    # the only labels a card may use
+    - name: "bug"
+      id: "00000000-0000-4000-8000-0000000000b1"
+    - name: "feature"
+      id: "00000000-0000-4000-8000-0000000000b2"
+    - name: "chore"
+      id: "00000000-0000-4000-8000-0000000000b3"
+  people:                    # assignee only if the meeting named them; match on name or alias
+    - name: "Alex Example"
+      id: "00000000-0000-4000-8000-0000000000c1"
+      aliases: ["Alex"]
+  default_assignee: null     # keep null: assign only people the meeting named
+
+scope:
+  company_participant_domains: ["example.com"]
+  out_of_scope_topics:
+    - medical
+    - financial-personal
+    - legal-personal
+    - family
+    - recruitment-of-a-named-individual
+  skip_workspace_hidden: true   # skip is_workspace_visible="false" unless unmistakably company work
+
+limits:                      # caps bound the damage of a manipulated run
+  max_cards_per_meeting: 3
+  max_cards_per_run: 8
+
+issue:
+  link_template: "https://notes.granola.ai/d/{meeting_id}"
+  attribution_template: "Filed by the meeting-notes assistant from {meeting_title}, {date}. Approval: {approval_id}."
+  language: "en"             # write cards and issues in this language (e.g. en-GB, en-US)
+
+approval:
+  # Informational for the agent: where cards go. The approval itself is enforced by the host,
+  # not by anything written here.
+  channel: "#meeting-approvals"
