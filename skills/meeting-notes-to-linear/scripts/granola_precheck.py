@@ -37,7 +37,7 @@ Configuration (flag, then environment):
     --state     / MN2L_STATE         state file listing handled meetings (see below)
     --min-age   / PRECHECK_MIN_AGE_MIN   minutes a meeting must have been running (default 30)
     --no-defer                       judge every meeting regardless of age (use on the day's last run)
-    --days      / PRECHECK_DAYS      how many UTC days to look back, today included (default 1)
+    --days      / PRECHECK_DAYS      how many UTC days to look back, today included (default 2)
     PRECHECK_HTTP_TIMEOUT            seconds (default 15)
 
 No auth location is assumed: set one of --auth-file or GRANOLA_ACCESS_TOKEN. The auth file is
@@ -210,6 +210,26 @@ class Client:
         raise Fail("reply-missing (no JSON-RPC message answering the request)")
 
 
+def top_level_meeting_tags(text):
+    """Yield the opening `<meeting ...>` tags that are not nested inside another meeting.
+
+    Note text sits inside these tags and is written by other people. Skipping from each opening tag to
+    its closing tag stops markup-looking text in a note from inflating the parsed count. It is not a
+    full defence: text that closes the tag itself can still break out, which is why a count mismatch
+    is a FAIL (a wake), never a pass. The worst a participant can do is cost one agent run."""
+    pos = 0
+    while True:
+        m = MEETING_TAG_RE.search(text, pos)
+        if not m:
+            return
+        yield m
+        pos = m.end()
+        if not m.group(0).endswith("/>"):
+            close = text.find("</meeting>", pos)
+            if close != -1:
+                pos = close + len("</meeting>")
+
+
 def parse_meetings(text, now):
     """Parse a `list_meetings` text reply -> (seen, others, rows).
 
@@ -217,7 +237,7 @@ def parse_meetings(text, now):
     someone other than the signed-in account. Raises Fail unless the reply is positively understood."""
     if "<meetings_data" not in text:
         raise Fail("no-meetings-wrapper")
-    tags = [dict(ATTR_RE.findall(m.group(1))) for m in MEETING_TAG_RE.finditer(text)]
+    tags = [dict(ATTR_RE.findall(m.group(1))) for m in top_level_meeting_tags(text)]
     # count= is REQUIRED, not merely checked when present. It is the second witness that the tag
     # regex still matches the reply: without it, a renamed tag or a dropped attribute parses as zero
     # meetings and reports an idle day from a reply this script did not understand. A genuinely empty
@@ -261,7 +281,9 @@ def load_handled(path):
         if isinstance(e, str):
             ids.add(e)
         elif isinstance(e, dict) and isinstance(e.get("ids"), list):
-            ids.update(i for i in e["ids"] if isinstance(i, str))
+            if not all(isinstance(i, str) for i in e["ids"]):
+                raise Fail("state-malformed (non-string id)")
+            ids.update(e["ids"])
         else:
             raise Fail("state-malformed (unrecognised entry)")
     return ids
@@ -297,6 +319,10 @@ def list_meetings_text(client, today, days):
                         "params": {"name": "list_meetings", "arguments": {
                             # `time_range` is required with a custom range: omitted, the server
                             # may return a wider default window with no sign it substituted.
+                            # The window is whole UTC days, read in a zone we cannot see, so it
+                            # spans yesterday as well by default: a meeting that straddles
+                            # midnight, or starts late in a western time zone, would otherwise
+                            # fall outside "today" and read as an idle day.
                             "time_range": "custom",
                             "custom_start": f"{(today - dt.timedelta(days=days - 1)).isoformat()}T00:00:00",
                             # End at tomorrow's midnight, not "now": a naive timestamp is read in a
@@ -341,7 +367,7 @@ def build_parser(env=None):
     p.add_argument("--auth-key", default=env.get("MCP_AUTH_SERVER", "granola"))
     p.add_argument("--state", default=env.get("MN2L_STATE"))
     p.add_argument("--min-age", type=int, default=int(env.get("PRECHECK_MIN_AGE_MIN", "30")))
-    p.add_argument("--days", type=int, default=int(env.get("PRECHECK_DAYS", "1")))
+    p.add_argument("--days", type=int, default=int(env.get("PRECHECK_DAYS", "2")))
     p.add_argument("--no-defer", action="store_true")
     return p
 

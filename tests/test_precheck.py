@@ -104,6 +104,25 @@ class ParseMeetings(unittest.TestCase):
         self.assertEqual(pc.parse_meetings(text, NOW)[0], 1)
 
 
+class MarkupInNotes(unittest.TestCase):
+    def test_meeting_lookalike_inside_a_note_is_not_counted(self):
+        injected = ('<meeting id="' + ID1 + '" date="Jan 15, 2030 9:00 AM GMT+0" captured_by_me="true">'
+                    'text <meeting id="aaaaaa1" date="x"> more</meeting>')
+        seen, _, rows = pc.parse_meetings('<meetings_data count="1">' + injected + '</meetings_data>', NOW)
+        self.assertEqual((seen, [r[0] for r in rows]), (1, [ID1]))
+
+    def test_self_closing_tags_are_each_counted(self):
+        text = ('<meetings_data count="2"><meeting id="%s" date="x"/><meeting id="%s" date="x"/></meetings_data>'
+                % (ID1, ID2))
+        self.assertEqual(pc.parse_meetings(text, NOW)[0], 2)
+
+    def test_a_note_that_closes_the_tag_itself_still_fails_open(self):
+        text = ('<meetings_data count="1"><meeting id="%s" date="x">a</meeting>'
+                '<meeting id="aaaaaa1" date="x"></meeting></meetings_data>' % ID1)
+        with self.assertRaisesRegex(pc.Fail, "count-mismatch"):
+            pc.parse_meetings(text, NOW)
+
+
 class Classify(unittest.TestCase):
     ROWS = [(ID1, 300), (ID2, 10), (ID3, None)]
 
@@ -142,6 +161,11 @@ class State(unittest.TestCase):
         with self.assertRaisesRegex(pc.Fail, "state-malformed"):
             pc.load_handled(p)
         p = write_json(self.tmp.name, "t.json", {"nothing": []})
+        with self.assertRaisesRegex(pc.Fail, "state-malformed"):
+            pc.load_handled(p)
+
+    def test_non_string_id_inside_an_entry_fails(self):
+        p = write_json(self.tmp.name, "s.json", {"handled": [{"ids": [ID1, 7]}]})
         with self.assertRaisesRegex(pc.Fail, "state-malformed"):
             pc.load_handled(p)
 
@@ -222,6 +246,7 @@ class FakeGranola(http.server.BaseHTTPRequestHandler):
     list_text = reply()
     mode = "json"          # json | sse | redirect | unauthorised | tool-error
     seen_auth = []
+    last_args = {}
 
     def log_message(self, *a):
         pass
@@ -250,6 +275,7 @@ class FakeGranola(http.server.BaseHTTPRequestHandler):
         if method == "notifications/initialized":
             return self._send(202, "")
         assert self.headers.get("Mcp-Session-Id") == "synthetic-session"
+        type(self).last_args = body["params"]
         result = {"isError": True, "content": [{"type": "text", "text": "Rate limit exceeded"}]} \
             if self.mode == "tool-error" else \
             {"content": [{"type": "text", "text": self.list_text}]}
@@ -300,6 +326,22 @@ class EndToEnd(unittest.TestCase):
         out, rc = self.run_check(self.state([{"ids": [ID1, ID2]}]))
         self.assertEqual(rc, 0)
         self.assertEqual(out.splitlines(), ["OK seen=2 others=1 new=0 defer=0", "VERDICT idle"])
+
+    def test_request_asks_for_a_custom_range_spanning_yesterday_to_tomorrow(self):
+        FakeGranola.list_text = reply()
+        self.run_check()
+        self.assertEqual(FakeGranola.last_args["name"], "list_meetings")
+        self.assertEqual(FakeGranola.last_args["arguments"], {
+            "time_range": "custom",
+            "custom_start": "2030-01-14T00:00:00",
+            "custom_end": "2030-01-16T00:00:00"})
+
+    def test_days_flag_narrows_and_widens_the_window(self):
+        FakeGranola.list_text = reply()
+        self.run_check(argv=["--days", "1"])
+        self.assertEqual(FakeGranola.last_args["arguments"]["custom_start"], "2030-01-15T00:00:00")
+        self.run_check(argv=["--days", "3"])
+        self.assertEqual(FakeGranola.last_args["arguments"]["custom_start"], "2030-01-13T00:00:00")
 
     def test_young_meeting_is_deferred_not_new(self):
         FakeGranola.list_text = reply(meeting(ID1, "Jan 15, 2030 1:50 PM GMT+0"))

@@ -26,7 +26,7 @@ any system you run. This is *indirect prompt injection*: instructions hidden in 
 | Tool abuse beyond the two write tools | Creating labels, projects, documents, attachments | Expose only `save_issue` and `save_comment` for writing; deny the rest |
 | State tampering | A manipulated run edits the state file so a different card is later filed, or so real meetings are skipped | Filer takes approved text from the approval store or chat thread, not state; state holds ids and titles, not authority |
 | Approval confusion | A user allowed to approve one class of action approves another | Separate approver lists per action class; keep the platform patched |
-| Cost and availability | A flood of meetings or a failing integration burns tokens every tick | Zero-token pre-check; fail-open on doubt but a repeating wake is surfaced; caps |
+| Cost and availability | A flood of meetings, markup in a note that makes the pre-check unsure, or a failing integration burns tokens every tick | Zero-token pre-check; caps. The pre-check is stateless and fails open, so a wake that repeats is **not** surfaced by this repository: count consecutive non-zero exits in your scheduler and alert on a streak |
 | Credential exposure | A token printed to a log or sent to the wrong host | Pre-check never prints tokens, refuses redirects and non-https, never refreshes; agent told never to dump environment or auth files |
 
 ## What this skill does and does not do

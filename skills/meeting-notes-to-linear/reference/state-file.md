@@ -9,8 +9,11 @@ has, and `scripts/granola_precheck.py` reads its `handled` list to decide whethe
     {
       "ids": ["<processed meeting id>", "<sibling meeting id>"],
       "date": "2030-01-15",
-      "outcome": "proposed | skipped: <reason> | existing: <ISSUE-KEY> | filed: <ISSUE-KEY>",
-      "cards": ["<card id>"]
+      "outcome": "proposed | skipped: <reason> | nothing-to-file | existing: <ISSUE-KEY>",
+      "cards": [
+        {"id": "<meeting id>-1", "outcome": "proposed | filed: <ISSUE-KEY> | existing: <ISSUE-KEY> | rejected"},
+        {"id": "<meeting id>-2", "outcome": "proposed"}
+      ]
     }
   ],
   "open": [
@@ -19,6 +22,8 @@ has, and `scripts/granola_precheck.py` reads its `handled` list to decide whethe
 }
 ```
 
+- The meeting-level `outcome` says how the meeting was judged; each card carries its own outcome, because the cards
+  from one meeting are approved, rejected and filed independently. A meeting with no cards omits `cards`.
 - `handled` is newest first and is what the pre-check reads. A bare string is also accepted as an entry (an id).
 - Every id of a meeting that arrived as several notes goes in `ids`, the processed one first.
 - `open` is the cards awaiting a decision. Add a card the moment you post it. Remove it the moment it is resolved

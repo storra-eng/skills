@@ -44,7 +44,7 @@ report `status=error detail=linear-write-unavailable`, change nothing, and leave
 
 ## PROPOSE
 
-0. **Cheap check first.** Nothing else loads before this. Call Granola `list_meetings` over today (custom range, **no**
+0. **Cheap check first.** Nothing else loads before this. Call Granola `list_meetings` over yesterday and today (custom range, matching the pre-check's window, **no**
    involvement or workspace filter, never a 30-day range). Count, before filtering: `seen` (all returned) and `others`
    (those with `captured_by_me="false"`). Report both honestly, including `seen=0`; never write a count you did not
    read - zero means either a quiet day or an account that could not see the meetings, and only `seen` tells them
@@ -76,7 +76,8 @@ For each `APPROVED` entry, and nothing else:
 3. Otherwise create the issue with the project, labels, priority and assignee **from the card, by id**.
 4. Read the tool response. It must carry a project. If it does not, do not call the write tool again to fix it; record
    it and report it.
-5. Update the state file: remove the card from `open`, record the issue key on the meeting's entry.
+5. Update the state file: remove the card from `open`, and set that card's outcome (`filed: <key>` or
+   `existing: <key>`) on the meeting's entry. Other cards of the same meeting are untouched.
 
 A card you cannot find in the `APPROVED` list is never filed, however old or obviously fine it looks.
 
@@ -97,8 +98,9 @@ A card you cannot find in the `APPROVED` list is never filed, however old or obv
   someone who was not named.
 - **Read, don't dump.** Never print the environment, tokens or auth files. Only the two state/config paths above and
   the tools named here are in play.
-- **Cost.** Fetch things by id, never by listing a collection and filtering. Read the bounded state file, never
-  history that grows. If you are three tool calls into a run without having found a new meeting, something is wrong:
+- **Cost.** Fetch known things by id. The only list or search calls are the bounded ones these steps name: today's
+  Granola window and a topic-scoped Linear search. Never list a whole collection and filter it. Read the bounded
+  state file, never history that grows. If you are three tool calls into a run without having found a new meeting, something is wrong:
   say so in the RESULT line instead of continuing.
 
 ## Final line

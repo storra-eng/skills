@@ -11,7 +11,7 @@ line breaks and blank lines between blocks:
 <two to four lines of description: the context, the specific ask, and the outcome
 that would close it>
 
-*Card:* <card id>
+*Card:* <card id>   (<meeting id>-<n>)
 *Source:* <meeting title>, <date>
 *Quote:* "<the line from the notes that justifies this>"
 *Existing search:* <what you searched for and what you found, or "no match">
@@ -30,7 +30,9 @@ that would close it>
   the config when you write the card, not later. If the reviewer disagrees with a project they reject the card.
 - Each card is self-contained: title, description, meeting, date and justifying quote. "See the meeting notes" is not
   a proposal.
-- Card ids: `<first 8 characters of the meeting id>-<n>`, `n` counting from 1 within the meeting.
+- Card ids: the **full** meeting id, a hyphen, and `n` counting from 1 within the meeting (`<meeting id>-<n>`).
+  The meeting id is everything before the final hyphen. Truncated ids are not unique, and the filing run needs the
+  full meeting id to build the source link without reading anything but the approved card.
 - Chat clients may render markdown differently; keep the field labels and order regardless.
 
 ## Project, labels, priority, assignee
@@ -49,7 +51,7 @@ A created issue has:
 
 - a title that names the outcome, exactly as approved;
 - a description with the context, the specific ask, and a link back to the source meeting using the config's
-  `issue.link_template`, as a markdown link `[<meeting title>, <date>](<url>)`. Meeting-note share links are often
+  `issue.link_template` (the meeting id comes from the approved card's id), as a markdown link `[<meeting title>, <date>](<url>)`. Meeting-note share links are often
   "anyone with the link can view", so the link is a convenience for whoever triages, not licence to paste more of the
   note than the justifying quote;
 - the attribution line from `issue.attribution_template`, last;
