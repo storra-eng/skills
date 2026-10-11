@@ -3,8 +3,8 @@
 ## Install
 
 ```bash
-mkdir -p .claude/skills && cp -R skills/actions-to-issues .claude/skills/     # project
-# or ~/.claude/skills/actions-to-issues for every project
+mkdir -p .claude/skills && cp -R skills/ActionsToIssues .claude/skills/     # project
+# or ~/.claude/skills/ActionsToIssues for every project
 ```
 
 Add the MCP servers (names are yours to choose; the permission rules below use them):
@@ -98,10 +98,10 @@ Run `scripts/granola_precheck.py` from cron or launchd first.
 2. **Pass its output into the prompt.** The `new <id>` and `defer <id>` lines are how the agent learns which meetings
    to leave alone for now; without them it re-lists Granola and may judge a half-finished meeting.
    ```bash
-   out=$(python3 skills/actions-to-issues/scripts/granola_precheck.py); rc=$?
+   out=$(python3 skills/ActionsToIssues/scripts/granola_precheck.py); rc=$?
    [ "$rc" -eq 0 ] && exit 0
    claude -p --settings proposer.settings.json --permission-prompts none \
-     "Run the actions-to-issues PROPOSE phase. Pre-check output:
+     "Run the ActionsToIssues PROPOSE phase. Pre-check output:
    $out"
    ```
 3. **Serialise runs** with a lock (`flock` or equivalent): PROPOSE and FILE both read and rewrite the state file.

@@ -1,9 +1,9 @@
 ---
-name: actions-to-issues
+name: ActionsToIssues
 description: Turn new Granola meeting notes into Linear issues, one human approval per issue. Use to triage meeting notes into trackable work. Reads untrusted text; never files without an approval the host enforces.
 license: MIT
 compatibility: Needs the Granola and Linear MCP servers, a host that enforces human approval before any Linear write, and Python 3 for the optional pre-check script.
-metadata: {"openclaw": {"homepage": "https://github.com/storra-eng/actions-to-issues", "requires": {"bins": ["python3"], "env": ["MN2L_CONFIG", "MN2L_STATE"]}}, "mcpServers": ["granola", "linear"], "optionalEnv": ["GRANOLA_ACCESS_TOKEN", "MCP_AUTH_FILE", "MCP_AUTH_SERVER", "GRANOLA_MCP_URL"], "permissions": {"read": ["granola: list_meetings, get_meetings, get_meeting_transcript", "linear: list_issues, get_issue, list_projects, list_issue_labels, list_users, list_teams"], "write": ["linear: save_issue, save_comment"], "writeRequiresHumanApproval": true, "writeEnforcedByThisSkill": false}}
+metadata: {"openclaw": {"homepage": "https://github.com/storra-eng/skills", "requires": {"bins": ["python3"], "env": ["MN2L_CONFIG", "MN2L_STATE"]}}, "mcpServers": ["granola", "linear"], "optionalEnv": ["GRANOLA_ACCESS_TOKEN", "MCP_AUTH_FILE", "MCP_AUTH_SERVER", "GRANOLA_MCP_URL"], "permissions": {"read": ["granola: list_meetings, get_meetings, get_meeting_transcript", "linear: list_issues, get_issue, list_projects, list_issue_labels, list_users, list_teams"], "write": ["linear: save_issue, save_comment"], "writeRequiresHumanApproval": true, "writeEnforcedByThisSkill": false}}
 ---
 
 # Meeting notes to Linear

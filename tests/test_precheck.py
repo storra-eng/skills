@@ -10,7 +10,7 @@ import threading
 import unittest
 
 SCRIPT = (pathlib.Path(__file__).resolve().parent.parent
-          / "skills" / "actions-to-issues" / "scripts" / "granola_precheck.py")
+          / "skills" / "ActionsToIssues" / "scripts" / "granola_precheck.py")
 spec = importlib.util.spec_from_file_location("granola_precheck", SCRIPT)
 pc = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(pc)

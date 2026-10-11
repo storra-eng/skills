@@ -35,7 +35,7 @@ What to take from it, whatever version you run:
 
 ## So: is the gate enforced?
 
-**As a skill alone: no.** Installing `actions-to-issues` from ClawHub gives the model instructions. Nothing in
+**As a skill alone: no.** Installing `ActionsToIssues` from ClawHub gives the model instructions. Nothing in
 OpenClaw's skill format makes it hold fewer tools, and exec approvals do not intercept MCP calls. The approval rule is
 a **prompt rule** until you configure one of the following.
 
@@ -47,7 +47,7 @@ Enforcement comes from the platform's tool visibility and sender allowlists, not
   - `linear_read`: `toolFilter.include` = `list_issues`, `get_issue`, `list_projects`, `list_issue_labels`,
     `list_users`, `list_teams`.
   - `linear_write`: `toolFilter.include` = `save_issue`, `save_comment`. Nothing else.
-- **Two agents**, both with `skills: ["actions-to-issues"]`:
+- **Two agents**, both with `skills: ["ActionsToIssues"]`:
   - `meeting-proposer`: Granola read tools, `linear_read`, the Slack message tool. **No `linear_write`.** Runs on the
     schedule (after the pre-check). This is the only agent that ever reads transcripts.
   - `meeting-filer`: `linear_read` and `linear_write`, no Granola. Reachable **only** from the approvers' Slack
@@ -73,8 +73,8 @@ namespace as unconfirmed**: the MCP page does not describe either.
   },
   agents: {
     entries: {
-      "meeting-proposer": { skills: ["actions-to-issues"] /* tools: deny linear_write (confirm key) */ },
-      "meeting-filer":    { skills: ["actions-to-issues"] /* tools: deny granola (confirm key) */ },
+      "meeting-proposer": { skills: ["ActionsToIssues"] /* tools: deny linear_write (confirm key) */ },
+      "meeting-filer":    { skills: ["ActionsToIssues"] /* tools: deny granola (confirm key) */ },
     },
   },
   tools: { agentToAgent: { enabled: false } },
