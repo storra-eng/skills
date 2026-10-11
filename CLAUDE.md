@@ -1,4 +1,4 @@
-# meeting-notes-to-linear
+# actions-to-issues
 
 A standalone, open-source agent skill that turns new Granola meeting notes into Linear issues, one human approval per
 issue. It ships policy (the skill), a zero-token pre-check script and tests. It does **not** ship an approval
@@ -18,7 +18,7 @@ copy.
   risk and mitigations, not exploits.
 - **Claims about third-party platforms must be sourced** (link the official docs) and dated. If a behaviour could not
   be confirmed in the docs, say so rather than implying it works.
-- The skill folder `skills/meeting-notes-to-linear/` must stay self-contained so it can be published as-is
+- The skill folder `skills/actions-to-issues/` must stay self-contained so it can be published as-is
   (`clawhub skill publish`) or copied into `.claude/skills/`.
 - British English in docs, written for an international audience. Files end with a newline.
 

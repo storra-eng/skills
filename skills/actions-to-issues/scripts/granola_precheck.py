@@ -331,7 +331,7 @@ def classify(rows, handled, min_age, defer=True):
 def list_meetings_text(client, today, days):
     init = client.post({"jsonrpc": "2.0", "id": 1, "method": "initialize",
                         "params": {"protocolVersion": PROTOCOL_VERSION, "capabilities": {},
-                                   "clientInfo": {"name": "meeting-notes-to-linear-precheck",
+                                   "clientInfo": {"name": "actions-to-issues-precheck",
                                                   "version": "1.0"}}}, 1)
     if "error" in init or "result" not in init:
         raise Fail("initialize-refused")

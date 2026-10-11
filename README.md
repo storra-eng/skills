@@ -1,4 +1,4 @@
-# meeting-notes-to-linear
+# actions-to-issues
 
 An agent skill that turns **new Granola meeting notes** into **Linear issues**, with **a human approval for every
 issue**. It is the generalised policy from an internal meeting-triage assistant: what counts as trackable work, how to
@@ -47,7 +47,7 @@ has recorded an approval. See [Hardening](#hardening-the-split).
 ## Repository layout
 
 ```
-skills/meeting-notes-to-linear/     the skill; publish or copy this folder as-is
+skills/actions-to-issues/     the skill; publish or copy this folder as-is
   SKILL.md                          instructions + frontmatter (env vars, MCP servers, permissions)
   config.example.yaml               your Linear team/projects/labels/people, scope rules, caps
   reference/                        policy, card and issue format, state file
@@ -65,7 +65,7 @@ docs/                               threat model, OpenClaw notes, Claude Code no
 
 ## Configure
 
-1. Copy `skills/meeting-notes-to-linear/config.example.yaml` somewhere private and fill it in: the team key, the
+1. Copy `skills/actions-to-issues/config.example.yaml` somewhere private and fill it in: the team key, the
    projects and labels the skill may use (with their ids), the people it may assign, your company email domains, and the
    caps on cards per meeting and per run. The skill invents none of these.
 2. Set the environment the skill declares:
@@ -81,7 +81,7 @@ docs/                               threat model, OpenClaw notes, Claude Code no
 3. Run the pre-check from your scheduler before starting the agent:
 
    ```bash
-   python3 skills/meeting-notes-to-linear/scripts/granola_precheck.py   # exit 0 idle, 10 work, 1 cannot tell
+   python3 skills/actions-to-issues/scripts/granola_precheck.py   # exit 0 idle, 10 work, 1 cannot tell
    ```
 
    Start the agent unless the exit status is `0`, and paste the script's `new` / `defer` lines into the agent's
@@ -99,18 +99,18 @@ docs/                               threat model, OpenClaw notes, Claude Code no
 ### OpenClaw
 
 ```bash
-openclaw skills install @<publisher>/meeting-notes-to-linear     # once published to ClawHub
-# or, from a checkout: copy skills/meeting-notes-to-linear into <workspace>/skills/
+openclaw skills install @<publisher>/actions-to-issues     # once published to ClawHub
+# or, from a checkout: copy skills/actions-to-issues into <workspace>/skills/
 ```
 
 Install and publish commands are from the [ClawHub docs](https://docs.openclaw.ai/clawhub) (read 9 October 2026).
-Publishing is `clawhub skill publish ./skills/meeting-notes-to-linear --slug meeting-notes-to-linear --name "Meeting
+Publishing is `clawhub skill publish ./skills/actions-to-issues --slug actions-to-issues --name "Meeting
 notes to Linear" --version 1.0.0`. Installing the skill does **not** configure approvals. Read
 [`docs/openclaw.md`](docs/openclaw.md) before you point it at a real Linear workspace.
 
 ### Claude Code
 
-Copy `skills/meeting-notes-to-linear` into `.claude/skills/` (project) or `~/.claude/skills/` (personal), add the two
+Copy `skills/actions-to-issues` into `.claude/skills/` (project) or `~/.claude/skills/` (personal), add the two
 MCP servers, and keep Linear's write tools on **ask** or **deny**. See [`docs/claude-code.md`](docs/claude-code.md).
 
 ## What the gate is, per platform
