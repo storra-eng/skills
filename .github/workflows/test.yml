@@ -9,12 +9,12 @@ permissions:
 
 jobs:
   unittest:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     strategy:
       matrix:
         python-version: ["3.9", "3.12"]
     steps:
-      - uses: actions/checkout@v7
+      - uses: useblacksmith/checkout@v1
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
