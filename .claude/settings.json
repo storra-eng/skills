@@ -1,0 +1,14 @@
+{
+  "extraKnownMarketplaces": {
+    "storra": {
+      "source": {
+        "source": "github",
+        "repo": "storra-eng/claude-plugins"
+      },
+      "autoUpdate": true
+    }
+  },
+  "enabledPlugins": {
+    "integrations@storra": true
+  }
+}
