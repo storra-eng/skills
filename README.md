@@ -181,3 +181,17 @@ deployment machinery, tracker data or real meeting content. MIT licensed, see [`
 
 Platform statements about OpenClaw come from its public documentation as read on 9 October 2026 and are linked from
 [`docs/openclaw.md`](docs/openclaw.md). Verify them against your installed version.
+
+## Git hooks
+
+Commits are checked by [pre-commit](https://pre-commit.com). Install it and the hook once per clone (git worktrees share
+the install):
+
+```sh
+brew install pre-commit   # or: pipx install pre-commit
+pre-commit install
+```
+
+The hook blocks a new file, or a change that grows one, past 5,000 tokens (bytes / 4), so files stay readable by an
+agent in one pass. The error explains how to split the file. Lockfiles, generated output and data are exempt; add
+repo-specific exemptions, with a reason, to `.token-budget-exempt`.

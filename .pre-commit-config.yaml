@@ -1,0 +1,12 @@
+# Install once per clone (worktrees share it): `pre-commit install`
+# Stdlib-only hooks live in scripts/; add language-specific hooks below as the repo grows.
+repos:
+  # Blocks new or growing files over 5,000 tokens; see scripts/check-file-token-budget.py.
+  - repo: local
+    hooks:
+      - id: file-token-budget
+        name: block files over 5,000 tokens
+        entry: scripts/check-file-token-budget.py
+        language: script
+        always_run: true
+        pass_filenames: false
