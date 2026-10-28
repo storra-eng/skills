@@ -69,7 +69,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from granola_reply import (  # noqa: E402,F401  (re-exported: tests and callers import these from here)
     ATTR_RE, COUNT_RE, DATE_RE, ID_RE, MEETING_TAG_RE, MONTHS, WRAPPER_CLOSE_RE, WRAPPER_OPEN_RE, Fail,
     has_second_wrapper, note_length_sec, parse_instant, parse_iso, parse_meetings, quiet_minutes,
