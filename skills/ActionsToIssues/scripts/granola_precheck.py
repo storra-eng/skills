@@ -40,6 +40,10 @@ Configuration (flag, then environment):
                                      The script has no end time, so this is a heuristic: set it above your
                                      longest regular meeting (for example 90) or a long meeting is read half-finished.
     --no-defer                       judge every meeting regardless of age (use on the day's last run)
+    --rows                           print every meeting and leave classification to the caller (needs no state
+                                     file): `OK seen=<n> others=<m>` then one `id <meeting id> <minutes since start>
+                                     <note length seconds> <minutes since last update>` line each, `unknown` where a
+                                     value could not be read. Exit 0 on a well-formed answer, 1 on anything else.
     --days      / PRECHECK_DAYS      how many UTC days to look back, today included (default 2)
     PRECHECK_HTTP_TIMEOUT            seconds (default 15)
 
@@ -59,60 +63,23 @@ import argparse
 import datetime as dt
 import json
 import os
-import re
 import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from granola_reply import (  # noqa: E402,F401  (re-exported: tests and callers import these from here)
+    ATTR_RE, COUNT_RE, DATE_RE, ID_RE, MEETING_TAG_RE, MONTHS, WRAPPER_CLOSE_RE, WRAPPER_OPEN_RE, Fail,
+    has_second_wrapper, note_length_sec, parse_instant, parse_iso, parse_meetings, quiet_minutes,
+    top_level_meeting_tags, wrapper_body)
+
 DEFAULT_URL = "https://mcp.granola.ai/mcp"
 PROTOCOL_VERSION = "2025-06-18"
 # An access token this close to expiry is treated as expired: the call would race it.
 EXPIRY_SKEW_SEC = 60
 LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
-
-MEETING_TAG_RE = re.compile(r'<meeting\b((?:[^>"]|"[^"]*")*)>', re.S)
-ATTR_RE = re.compile(r'([\w:.-]+)\s*=\s*"([^"]*)"')
-COUNT_RE = re.compile(r'<meetings_data\b[^>]*?\bcount="(\d+)"')
-# Anything that is not shaped like an opaque id is a parse we do not trust.
-ID_RE = re.compile(r"[A-Za-z0-9_-]{6,}\Z")
-MONTHS = {m: i for i, m in enumerate(
-    ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1)}
-DATE_RE = re.compile(
-    r"(\w{3})\w*\s+(\d{1,2}),\s+(\d{4})\s+(\d{1,2}):(\d{2})\s*([AP])M"
-    r"(?:\s*GMT([+-])(\d{1,2})(?::?(\d{2}))?)?", re.I)
-
-
-class Fail(Exception):
-    pass
-
-
-def parse_instant(human):
-    """"Aug 13, 2026 12:00 PM GMT+2" -> aware datetime, or None.
-
-    A date with no `GMT<offset>` is None rather than UTC: here a wrong instant decides whether a
-    meeting is held back as too young, and a local time read as UTC would be hours too young.
-    None is read by the caller as OLD - fail open."""
-    m = DATE_RE.search(human or "")
-    if not m:
-        return None
-    mon, day, year, hour, minute, half, sign, off_h, off_m = m.groups()
-    if not sign:
-        return None
-    mon = MONTHS.get(mon.title())
-    if not mon:
-        return None
-    if not 1 <= int(hour) <= 12 or int(minute) > 59:
-        return None
-    hour = int(hour) % 12 + (12 if half.upper() == "P" else 0)
-    offset = dt.timedelta(hours=int(off_h or 0), minutes=int(off_m or 0))
-    try:
-        return dt.datetime(int(year), mon, int(day), hour, int(minute),
-                           tzinfo=dt.timezone(-offset if sign == "-" else offset))
-    except ValueError:
-        return None
-
 
 def check_url(url):
     """The bearer token must only ever travel over https, or to a loopback test server."""
@@ -225,65 +192,6 @@ class Client:
         raise Fail("reply-missing (no JSON-RPC message answering the request)")
 
 
-def top_level_meeting_tags(text):
-    """Yield the opening `<meeting ...>` tags that are not nested inside another meeting.
-
-    Note text sits inside these tags and is written by other people. Skipping from each opening tag to
-    its closing tag stops markup-looking text in a note from inflating the parsed count. It is not a
-    full defence: text that closes the tag itself can still break out, which is why a count mismatch
-    is a FAIL (a wake), never a pass. The worst a participant can do is cost one agent run."""
-    pos = 0
-    while True:
-        m = MEETING_TAG_RE.search(text, pos)
-        if not m:
-            return
-        yield m
-        pos = m.end()
-        if not m.group(0).endswith("/>"):
-            close = text.find("</meeting>", pos)
-            if close != -1:
-                pos = close + len("</meeting>")
-
-
-def parse_meetings(text, now):
-    """Parse a `list_meetings` text reply -> (seen, others, rows).
-
-    rows is a list of (meeting id, minutes since start | None). `others` counts notes captured by
-    someone other than the signed-in account. Raises Fail unless the reply is positively understood."""
-    if "<meetings_data" not in text:
-        raise Fail("no-meetings-wrapper")
-    tags = []
-    for m in top_level_meeting_tags(text):
-        pairs = ATTR_RE.findall(m.group(1))
-        # A repeated attribute name (for example from an unescaped quote in a title) would let a later
-        # value silently override `id`, `date` or `captured_by_me`. Refuse rather than pick one.
-        if len({k for k, _ in pairs}) != len(pairs):
-            raise Fail("duplicate-attribute")
-        tags.append(dict(pairs))
-    # count= is REQUIRED, not merely checked when present. It is the second witness that the tag
-    # regex still matches the reply: without it, a renamed tag or a dropped attribute parses as zero
-    # meetings and reports an idle day from a reply this script did not understand. A genuinely empty
-    # day still answers `<meetings_data count="0" />`.
-    cm = COUNT_RE.search(text)
-    if not cm:
-        raise Fail("no-count (the wrapper carries no count= to check the parse against)")
-    if int(cm.group(1)) != len(tags):
-        raise Fail(f"count-mismatch (wrapper {cm.group(1)}, parsed {len(tags)})")
-    rows, others = [], 0
-    for a in tags:
-        mid = a.get("id", "")
-        if not ID_RE.match(mid):
-            raise Fail("unparseable-meeting-id")
-        if a.get("captured_by_me") == "false":
-            others += 1
-        inst = parse_instant(a.get("date"))
-        age_min = None if inst is None else int((now - inst).total_seconds() // 60)
-        # A start in the FUTURE is a misread date, not a very young meeting: unknown, which the
-        # caller treats as old. Only a date that parsed to a plausible past instant may hold one back.
-        rows.append((mid, None if age_min is None or age_min < 0 else age_min))
-    return len(tags), others, rows
-
-
 def load_handled(path):
     """Set of every meeting id the state file records as handled.
 
@@ -318,7 +226,8 @@ def load_handled(path):
 def classify(rows, handled, min_age, defer=True):
     """Split rows into (new, deferred). Unknown age counts as old; handled ids are dropped."""
     new, deferred = [], []
-    for mid, age in rows:
+    for row in rows:
+        mid, age = row[0], row[1]
         if mid in handled:
             continue
         if defer and age is not None and age < min_age:
@@ -376,11 +285,19 @@ def run(args, env=None, now=None):
     env = os.environ if env is None else env
     now = now or dt.datetime.now(dt.timezone.utc)
     access, url = load_token(args.auth_file, args.auth_key, env, now.timestamp())
-    handled = load_handled(args.state)
-    state_note = "ok" if os.path.exists(args.state) else "absent"
+    # --rows hands the classification to the caller (a host that keeps its own record of what is
+    # handled), so it needs no state file and never reads one.
+    handled = None if args.rows else load_handled(args.state)
+    state_note = "ok" if args.state and os.path.exists(args.state) else "absent"
     client = Client(access, url, float(env.get("PRECHECK_HTTP_TIMEOUT", "15")))
     text = list_meetings_text(client, now.date(), args.days)
     seen, others, rows = parse_meetings(text, now)
+    if args.rows:
+        def f(v):
+            return "unknown" if v is None else str(v)
+        lines = [f"OK seen={seen} others={others}"]
+        lines += [f"id {mid} {f(age)} {f(length)} {f(quiet)}" for mid, age, length, quiet in rows]
+        return ("\n".join(lines), 0)
     new, deferred = classify(rows, handled, args.min_age, defer=not args.no_defer)
     lines = [f"OK seen={seen} others={others} new={len(new)} defer={len(deferred)} state={state_note}"]
     lines += [f"new {mid} {'unknown' if age is None else age}" for mid, age in new]
@@ -398,6 +315,9 @@ def build_parser(env=None):
     p.add_argument("--min-age", type=int, default=int(env.get("PRECHECK_MIN_AGE_MIN", "30")))
     p.add_argument("--days", type=int, default=int(env.get("PRECHECK_DAYS", "2")))
     p.add_argument("--no-defer", action="store_true")
+    p.add_argument("--rows", action="store_true",
+                   help="print every meeting (id, minutes since start, note length s, minutes since "
+                        "update) and leave classification to the caller; needs no state file")
     return p
 
 
