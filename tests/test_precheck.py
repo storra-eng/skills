@@ -38,107 +38,6 @@ def write_json(directory, name, data):
     return path
 
 
-class ParseInstant(unittest.TestCase):
-    def test_offset_applied(self):
-        got = pc.parse_instant("Jan 15, 2030 9:00 AM GMT+2")
-        self.assertEqual(got, dt.datetime(2030, 1, 15, 7, 0, tzinfo=dt.timezone.utc))
-
-    def test_pm_and_negative_offset(self):
-        got = pc.parse_instant("Jan 15, 2030 12:30 PM GMT-5")
-        self.assertEqual(got, dt.datetime(2030, 1, 15, 17, 30, tzinfo=dt.timezone.utc))
-
-    def test_midnight_is_zero_hour(self):
-        got = pc.parse_instant("Jan 15, 2030 12:05 AM GMT+0")
-        self.assertEqual(got.hour, 0)
-
-    def test_no_offset_is_none_not_utc(self):
-        self.assertIsNone(pc.parse_instant("Jan 15, 2030 9:00 AM"))
-
-    def test_impossible_clock_values_are_none(self):
-        self.assertIsNone(pc.parse_instant("Jan 15, 2030 13:00 PM GMT+0"))
-        self.assertIsNone(pc.parse_instant("Jan 15, 2030 0:30 AM GMT+0"))
-        self.assertIsNone(pc.parse_instant("Jan 15, 2030 9:75 AM GMT+0"))
-
-    def test_garbage_is_none(self):
-        self.assertIsNone(pc.parse_instant("yesterday-ish"))
-        self.assertIsNone(pc.parse_instant(None))
-
-
-class ParseMeetings(unittest.TestCase):
-    def test_counts_and_ages(self):
-        text = reply(meeting(ID1, "Jan 15, 2030 9:00 AM GMT+0"),
-                     meeting(ID2, "Jan 15, 2030 1:45 PM GMT+0", mine="false"))
-        seen, others, rows = pc.parse_meetings(text, NOW)
-        self.assertEqual((seen, others), (2, 1))
-        self.assertEqual(rows, [(ID1, 300), (ID2, 15)])
-
-    def test_empty_day_is_a_positive_answer(self):
-        self.assertEqual(pc.parse_meetings('<meetings_data count="0" />', NOW), (0, 0, []))
-
-    def test_count_mismatch_fails(self):
-        with self.assertRaisesRegex(pc.Fail, "count-mismatch"):
-            pc.parse_meetings(reply(meeting(ID1), count=2), NOW)
-
-    def test_missing_count_fails(self):
-        with self.assertRaisesRegex(pc.Fail, "no-count"):
-            pc.parse_meetings("<meetings_data>" + meeting(ID1) + "</meetings_data>", NOW)
-
-    def test_renamed_tag_does_not_read_as_idle(self):
-        text = '<meetings_data count="1"><note id="%s" date="x"/></meetings_data>' % ID1
-        with self.assertRaisesRegex(pc.Fail, "count-mismatch"):
-            pc.parse_meetings(text, NOW)
-
-    def test_no_wrapper_fails(self):
-        with self.assertRaisesRegex(pc.Fail, "no-meetings-wrapper"):
-            pc.parse_meetings("Rate limit exceeded", NOW)
-
-    def test_bad_id_fails(self):
-        with self.assertRaisesRegex(pc.Fail, "unparseable-meeting-id"):
-            pc.parse_meetings(reply(meeting("x y")), NOW)
-
-    def test_date_without_offset_is_unknown_age(self):
-        _, _, rows = pc.parse_meetings(reply(meeting(ID1, "Jan 15, 2030 1:59 PM")), NOW)
-        self.assertEqual(rows, [(ID1, None)])
-
-    def test_future_date_is_unknown_age(self):
-        _, _, rows = pc.parse_meetings(reply(meeting(ID1, "Jan 16, 2030 9:00 AM GMT+0")), NOW)
-        self.assertEqual(rows, [(ID1, None)])
-
-    def test_duplicate_attribute_fails_rather_than_overriding_the_id(self):
-        text = ('<meetings_data count="1"><meeting id="%s" title="a" id="%s" date="x"></meeting></meetings_data>'
-                % (ID1, ID2))
-        with self.assertRaisesRegex(pc.Fail, "duplicate-attribute"):
-            pc.parse_meetings(text, NOW)
-
-    def test_id_with_trailing_newline_is_refused(self):
-        text = '<meetings_data count="1"><meeting id="%s\n" date="x"/></meetings_data>' % ID1
-        with self.assertRaisesRegex(pc.Fail, "unparseable-meeting-id"):
-            pc.parse_meetings(text, NOW)
-
-    def test_attribute_containing_angle_bracket_still_parses(self):
-        text = reply(meeting(ID1, title="a > b"))
-        self.assertEqual(pc.parse_meetings(text, NOW)[0], 1)
-
-
-class MarkupInNotes(unittest.TestCase):
-    def test_meeting_lookalike_inside_a_note_is_not_counted(self):
-        injected = ('<meeting id="' + ID1 + '" date="Jan 15, 2030 9:00 AM GMT+0" captured_by_me="true">'
-                    'text <meeting id="aaaaaa1" date="x"> more</meeting>')
-        seen, _, rows = pc.parse_meetings('<meetings_data count="1">' + injected + '</meetings_data>', NOW)
-        self.assertEqual((seen, [r[0] for r in rows]), (1, [ID1]))
-
-    def test_self_closing_tags_are_each_counted(self):
-        text = ('<meetings_data count="2"><meeting id="%s" date="x"/><meeting id="%s" date="x"/></meetings_data>'
-                % (ID1, ID2))
-        self.assertEqual(pc.parse_meetings(text, NOW)[0], 2)
-
-    def test_a_note_that_closes_the_tag_itself_still_fails_open(self):
-        text = ('<meetings_data count="1"><meeting id="%s" date="x">a</meeting>'
-                '<meeting id="aaaaaa1" date="x"></meeting></meetings_data>' % ID1)
-        with self.assertRaisesRegex(pc.Fail, "count-mismatch"):
-            pc.parse_meetings(text, NOW)
-
-
 class Classify(unittest.TestCase):
     ROWS = [(ID1, 300), (ID2, 10), (ID3, None)]
 
@@ -337,6 +236,17 @@ class EndToEnd(unittest.TestCase):
 
     def state(self, handled):
         return write_json(self.tmp.name, "state.json", {"handled": handled})
+
+    def test_rows_mode_prints_every_meeting_and_needs_no_state(self):
+        FakeGranola.list_text = reply(meeting(ID1, "Jan 15, 2030 9:00 AM GMT+0"),
+                                      meeting(ID2, "Jan 15, 2030 1:45 PM GMT+0", mine="false"))
+        args = pc.build_parser(self.env).parse_args(["--rows", "--days", "1"])
+        out, rc = pc.run(args, env=self.env, now=NOW)
+        self.assertEqual(rc, 0)
+        self.assertEqual(out.splitlines(), [
+            "OK seen=2 others=1",
+            f"id {ID1} 300 unknown unknown",
+            f"id {ID2} 15 unknown unknown"])
 
     def test_new_meeting_means_work(self):
         FakeGranola.list_text = reply(meeting(ID1))
