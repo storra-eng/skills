@@ -107,17 +107,13 @@ def wrapper_body(text):
 
 
 def has_second_wrapper(text):
-    """True when a further `<meetings_data>` wrapper follows the first one's close - a paged or
-    multi-day listing. Only the first body is read, so this is a doubt, not something to merge."""
+    """True when a further `<meetings_data>` open tag follows the first one anywhere - after its close
+    (a paged or multi-day listing) or inside its body (a nested wrapper, whose own count= could otherwise
+    agree with the outer one). Only the first body is read, so either is a doubt, not something to merge."""
     m = WRAPPER_OPEN_RE.search(text or "")
     if m is None:
         return False
-    if m.group(1).rstrip().endswith("/"):
-        return WRAPPER_OPEN_RE.search(text, m.end()) is not None
-    close = WRAPPER_CLOSE_RE.search(text, m.end())
-    if close is None:
-        return False
-    return WRAPPER_OPEN_RE.search(text, close.end()) is not None
+    return WRAPPER_OPEN_RE.search(text, m.end()) is not None
 
 
 def top_level_meeting_tags(text):

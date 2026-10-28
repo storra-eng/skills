@@ -143,6 +143,11 @@ class WrapperScoping(unittest.TestCase):
         with self.assertRaisesRegex(pc.Fail, "multiple-meetings-wrappers"):
             pc.parse_meetings(reply(meeting(ID1)) + reply(meeting(ID2)), NOW)
 
+    def test_nested_wrapper_is_a_doubt(self):
+        text = ('<meetings_data count="1">' + reply(meeting(ID1)) + '</meetings_data>')
+        with self.assertRaisesRegex(pc.Fail, "multiple-meetings-wrappers"):
+            pc.parse_meetings(text, NOW)
+
     def test_unterminated_wrapper_fails(self):
         with self.assertRaisesRegex(pc.Fail, "unterminated-meetings-wrapper"):
             pc.parse_meetings('<meetings_data count="1">' + meeting(ID1), NOW)
