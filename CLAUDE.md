@@ -21,6 +21,7 @@ copy.
 - The skill folder `skills/ActionsToIssues/` must stay self-contained so it can be published as-is
   (`clawhub skill publish`) or copied into `.claude/skills/`.
 - British English in docs, written for an international audience. Files end with a newline.
+- When a repository's documentation and its existing code disagree, follow the conventions in the existing code. In your final reply, list each inconsistency you found between the documentation and the code.
 
 ## Checks
 
