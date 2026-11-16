@@ -22,7 +22,7 @@ MONTHS = {m: i for i, m in enumerate(
     ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1)}
 DATE_RE = re.compile(
     r"(\w{3})\w*\s+(\d{1,2}),\s+(\d{4})\s+(\d{1,2}):(\d{2})\s*([AP])M"
-    r"(?:\s*GMT([+-])(\d{1,2})(?::?(\d{2}))?)?", re.I)
+    r"(?:\s*(?:GMT|UTC)(?:([+-])(\d{1,2})(?::?(\d{2}))?)?)?", re.I)
 
 
 class Fail(Exception):
@@ -32,14 +32,14 @@ class Fail(Exception):
 def parse_instant(human):
     """"Aug 13, 2026 12:00 PM GMT+2" -> aware datetime, or None.
 
-    A date with no `GMT<offset>` is None rather than UTC: here a wrong instant decides whether a
+    A bare `GMT`/`UTC` (Granola's winter format) is offset +0. A date with no zone at all is None rather than UTC: here a wrong instant decides whether a
     meeting is held back as too young, and a local time read as UTC would be hours too young.
     None is read by the caller as OLD - fail open."""
     m = DATE_RE.search(human or "")
     if not m:
         return None
     mon, day, year, hour, minute, half, sign, off_h, off_m = m.groups()
-    if not sign:
+    if not m.group(0).strip().upper().endswith(("GMT", "UTC")) and not sign:
         return None
     mon = MONTHS.get(mon.title())
     if not mon:

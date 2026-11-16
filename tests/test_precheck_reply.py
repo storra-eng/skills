@@ -38,6 +38,16 @@ class ParseInstant(unittest.TestCase):
         got = pc.parse_instant("Jan 15, 2030 12:05 AM GMT+0")
         self.assertEqual(got.hour, 0)
 
+    def test_bare_gmt_and_utc_are_offset_zero(self):
+        # Granola prints a bare "GMT" in winter (no offset digits).
+        for z in ("GMT", "UTC", "gmt"):
+            got = pc.parse_instant("Nov 16, 2026 10:00 AM " + z)
+            self.assertEqual(got.utcoffset().total_seconds(), 0, z)
+            self.assertEqual((got.hour, got.minute), (10, 0), z)
+
+    def test_bare_gmt_still_rejects_bad_clock(self):
+        self.assertIsNone(pc.parse_instant("Nov 16, 2026 13:00 PM GMT"))
+
     def test_no_offset_is_none_not_utc(self):
         self.assertIsNone(pc.parse_instant("Jan 15, 2030 9:00 AM"))
 
