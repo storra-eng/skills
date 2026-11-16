@@ -282,28 +282,30 @@ def list_meetings_text(client, today, days):
 
 
 def fetch_timing(client, ids):
-    """`created_at`/`updated_at` for `ids` from one `get_meetings` call, or {} on ANY failure.
+    """`created_at`/`updated_at` for `ids` from `get_meetings`, ten ids a call (the tool's limit), or
+    {} for any chunk that fails.
 
     The list reply no longer carries them (seen 2026-11-16; before 2026-10-28 it did), and without
     them a caller can neither hold back a note still being written nor notice one that grew.
-    Best effort by design: unknown is what every caller already treats as the fail-open answer.
-    Capped at ten ids, the tool's limit; the helper is told to ask for nothing else (no notes
-    beyond what the tool returns by default, no attachments, no attendees)."""
-    ids = list(dict.fromkeys(ids))[:10]
-    if not ids:
-        return {}
-    try:
-        resp = client.post({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
-                            "params": {"name": "get_meetings", "arguments": {
-                                "meeting_ids": ids, "attachments": "none", "max_participants": 0}}}, 3)
-        res = resp.get("result")
-        if "error" in resp or not isinstance(res, dict) or res.get("isError"):
-            return {}
-        texts = [p.get("text", "") for p in res.get("content") or []
-                 if isinstance(p, dict) and p.get("type") == "text"]
-        return timing_from_reply("\n".join(t for t in texts if isinstance(t, str)), set(ids))
-    except Fail:
-        return {}
+    Best effort by design: unknown is what every caller already treats as the fail-open answer."""
+    ids = list(dict.fromkeys(ids))
+    out = {}
+    for i in range(0, len(ids), 10):
+        chunk = ids[i:i + 10]
+        try:
+            resp = client.post({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
+                                "params": {"name": "get_meetings", "arguments": {
+                                    "meeting_ids": chunk, "attachments": "none",
+                                    "max_participants": 0}}}, 3)
+            res = resp.get("result")
+            if "error" in resp or not isinstance(res, dict) or res.get("isError"):
+                continue
+            texts = [p.get("text", "") for p in res.get("content") or []
+                     if isinstance(p, dict) and p.get("type") == "text"]
+            out.update(timing_from_reply("\n".join(t for t in texts if isinstance(t, str)), set(chunk)))
+        except Fail:
+            continue
+    return out
 
 
 def run(args, env=None, now=None):
@@ -320,11 +322,9 @@ def run(args, env=None, now=None):
     if args.rows:
         # Only --rows needs note timing; the classifying mode has no use for it.
         need = [mid for mid, _age, length, quiet in rows if length is None or quiet is None]
-        if need:
-            timing = fetch_timing(client, need)
-            if timing:
-                seen, others, rows = parse_meetings(text, now, timing)
-    if args.rows:
+        timing = fetch_timing(client, need) if need else {}
+        if timing:
+            seen, others, rows = parse_meetings(text, now, timing)
         def f(v):
             return "unknown" if v is None else str(v)
         lines = [f"OK seen={seen} others={others}"]

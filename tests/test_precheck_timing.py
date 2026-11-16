@@ -43,6 +43,12 @@ class RowsTiming(unittest.TestCase):
     def test_rows_mode_survives_a_failed_get_meetings(self):
         out, rc = self._rows(reply(meeting(ID1)), get_error=True)
         self.assertEqual((rc, out.splitlines()[1]), (0, f"id {ID1} 300 unknown unknown"))
+        self.assertIn("get_meetings", FakeGranola.calls)
+
+    def test_more_than_ten_ids_are_fetched_in_chunks_of_ten(self):
+        ids = [f"00000000-0000-4000-8000-{n:012d}" for n in range(1, 13)]
+        self._rows(reply(*[meeting(i) for i in ids]), get_error=True)
+        self.assertEqual(FakeGranola.calls.count("get_meetings"), 2)
 
     def test_rows_mode_skips_get_meetings_when_the_list_already_has_timing(self):
         full = (f'<meetings_data count="1"><meeting id="{ID1}" title="t" date="Jan 15, 2030 9:00 AM GMT+0" '
