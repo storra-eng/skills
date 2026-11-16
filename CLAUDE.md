@@ -30,3 +30,9 @@ python3 -m unittest discover -s tests -v
 ```
 
 Standard library only; no install step.
+
+## Landing work
+
+Work in a `git gtr` worktree and land it straight on the default branch: rebase onto `origin/<default>`, run the local
+checks and `/code-review`, then fast-forward push. **No pull request** (Ed, 16 Nov 2026). Dependabot and other bot PRs
+still arrive as PRs. Never commit in the main checkout, never force-push the default branch, never `--no-verify`.
