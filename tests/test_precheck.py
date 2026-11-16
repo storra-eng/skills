@@ -168,6 +168,9 @@ class FakeGranola(http.server.BaseHTTPRequestHandler):
     seen_auth = []
     last_args = {}
     seen_protocol = []
+    get_text = None        # served for a get_meetings call; None = same as list_text
+    get_error = False
+    calls = []
 
     def log_message(self, *a):
         pass
@@ -197,7 +200,16 @@ class FakeGranola(http.server.BaseHTTPRequestHandler):
         if method == "notifications/initialized":
             return self._send(202, "")
         assert self.headers.get("Mcp-Session-Id") == "synthetic-session"
-        type(self).last_args = body["params"]
+        type(self).calls.append(body["params"].get("name"))
+        if body["params"].get("name") == "get_meetings":
+            type(self).get_args = body["params"]["arguments"]
+            if self.get_error:
+                return self._send(200, json.dumps({"jsonrpc": "2.0", "id": body["id"], "error": {"code": -1}}))
+            if self.get_text is not None:
+                return self._send(200, json.dumps({"jsonrpc": "2.0", "id": body["id"], "result": {
+                    "content": [{"type": "text", "text": self.get_text}]}}))
+        else:
+            type(self).last_args = body["params"]
         type(self).seen_protocol.append(self.headers.get("MCP-Protocol-Version"))
         result = {"isError": True, "content": [{"type": "text", "text": "Rate limit exceeded"}]} \
             if self.mode == "tool-error" else \

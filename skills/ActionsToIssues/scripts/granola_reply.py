@@ -136,12 +136,15 @@ def top_level_meeting_tags(text):
                 pos = close + len("</meeting>")
 
 
-def parse_meetings(text, now):
+def parse_meetings(text, now, timing=None):
     """Parse a `list_meetings` text reply -> (seen, others, rows).
 
     rows is a list of (meeting id, minutes since start | None, note length in seconds | None,
     minutes since last update | None). `others` counts notes captured by someone other than the
-    signed-in account. Raises Fail unless the reply is positively understood."""
+    signed-in account. Raises Fail unless the reply is positively understood.
+
+    `timing` maps a meeting id to the `created_at`/`updated_at` attributes read elsewhere (the list
+    reply stopped carrying them; `get_meetings` still does). A list-reply attribute wins."""
     # The wrapper's OPEN TAG is the test for "is this a listing at all", not the substring: a renamed
     # tag (`<meetings_data_v2>`) contains it and would otherwise be reported as an unterminated
     # wrapper, sending the reader after a cut-off reply instead of the format drift it is.
@@ -178,10 +181,34 @@ def parse_meetings(text, now):
             raise Fail("unparseable-meeting-id")
         if a.get("captured_by_me") == "false":
             others += 1
-        inst = parse_instant(a.get("date"))
+        for k, v in ((timing or {}).get(mid) or {}).items():
+            a.setdefault(k, v)
+        # `meeting_at` is an ISO instant with its offset: no zone name to misread. The human `date`
+        # is only the fallback (a bare `GMT` read as unknown for a whole winter, STO-999).
+        inst = parse_iso(a.get("meeting_at")) or parse_instant(a.get("date"))
         age_min = None if inst is None else int((now - inst).total_seconds() // 60)
         # A start in the FUTURE is a misread date, not a very young meeting: unknown, which the
         # caller treats as old. Only a date that parsed to a plausible past instant may hold one back.
         rows.append((mid, None if age_min is None or age_min < 0 else age_min,
                      note_length_sec(a), quiet_minutes(a, now)))
     return len(tags), others, rows
+
+
+def timing_from_reply(text, wanted):
+    """`get_meetings` reply -> {id: {"created_at": ..., "updated_at": ...}} for the ids in `wanted`.
+    A note's own text sits inside the wrapper, so a tag for an id is trusted only when it is the one
+    such tag: a repeated id (a forged tag in note text, or a duplicate) is left unknown, which every
+    caller reads as the fail-open answer."""
+    body = wrapper_body(text)
+    out, bad = {}, set()
+    for m in top_level_meeting_tags(body or ""):
+        a = dict(ATTR_RE.findall(m.group(1)))
+        mid = a.get("id")
+        if mid not in wanted:
+            continue
+        if mid in out or mid in bad:
+            out.pop(mid, None)
+            bad.add(mid)
+            continue
+        out[mid] = {k: a[k] for k in ("created_at", "updated_at") if k in a}
+    return out

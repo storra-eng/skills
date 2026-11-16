@@ -73,7 +73,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from granola_reply import (  # noqa: E402,F401  (re-exported: tests and callers import these from here)
     ATTR_RE, COUNT_RE, DATE_RE, ID_RE, MEETING_TAG_RE, MONTHS, WRAPPER_CLOSE_RE, WRAPPER_OPEN_RE, Fail,
     has_second_wrapper, note_length_sec, parse_instant, parse_iso, parse_meetings, quiet_minutes,
-    top_level_meeting_tags, wrapper_body)
+    timing_from_reply, top_level_meeting_tags, wrapper_body)
 
 DEFAULT_URL = "https://mcp.granola.ai/mcp"
 PROTOCOL_VERSION = "2025-06-18"
@@ -281,6 +281,31 @@ def list_meetings_text(client, today, days):
     return "\n".join(t for t in texts if isinstance(t, str))
 
 
+def fetch_timing(client, ids):
+    """`created_at`/`updated_at` for `ids` from one `get_meetings` call, or {} on ANY failure.
+
+    The list reply no longer carries them (seen 2026-11-16; before 2026-10-28 it did), and without
+    them a caller can neither hold back a note still being written nor notice one that grew.
+    Best effort by design: unknown is what every caller already treats as the fail-open answer.
+    Capped at ten ids, the tool's limit; the helper is told to ask for nothing else (no notes
+    beyond what the tool returns by default, no attachments, no attendees)."""
+    ids = list(dict.fromkeys(ids))[:10]
+    if not ids:
+        return {}
+    try:
+        resp = client.post({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
+                            "params": {"name": "get_meetings", "arguments": {
+                                "meeting_ids": ids, "attachments": "none", "max_participants": 0}}}, 3)
+        res = resp.get("result")
+        if "error" in resp or not isinstance(res, dict) or res.get("isError"):
+            return {}
+        texts = [p.get("text", "") for p in res.get("content") or []
+                 if isinstance(p, dict) and p.get("type") == "text"]
+        return timing_from_reply("\n".join(t for t in texts if isinstance(t, str)), set(ids))
+    except Fail:
+        return {}
+
+
 def run(args, env=None, now=None):
     env = os.environ if env is None else env
     now = now or dt.datetime.now(dt.timezone.utc)
@@ -292,6 +317,13 @@ def run(args, env=None, now=None):
     client = Client(access, url, float(env.get("PRECHECK_HTTP_TIMEOUT", "15")))
     text = list_meetings_text(client, now.date(), args.days)
     seen, others, rows = parse_meetings(text, now)
+    if args.rows:
+        # Only --rows needs note timing; the classifying mode has no use for it.
+        need = [mid for mid, _age, length, quiet in rows if length is None or quiet is None]
+        if need:
+            timing = fetch_timing(client, need)
+            if timing:
+                seen, others, rows = parse_meetings(text, now, timing)
     if args.rows:
         def f(v):
             return "unknown" if v is None else str(v)

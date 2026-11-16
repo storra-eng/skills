@@ -25,6 +25,27 @@ def reply(*meetings, count=None):
     return f'<meetings_data count="{n}">' + "".join(meetings) + "</meetings_data>"
 
 
+class MeetingAtAndTiming(unittest.TestCase):
+    def test_age_prefers_the_iso_meeting_at_over_a_date_it_cannot_read(self):
+        tag = (f'<meeting id="{ID1}" title="t" date="Jan 15, 2030 9:00 AM" '
+               'meeting_at="2030-01-15T13:00:00.000+00:00" captured_by_me="true">n</meeting>')
+        _, _, rows = pc.parse_meetings(reply(tag), NOW)
+        self.assertEqual(rows[0][1], 60)
+
+    def test_winter_bare_gmt_date_alone_gives_an_age(self):
+        _, _, rows = pc.parse_meetings(reply(meeting(ID1, "Jan 15, 2030 1:30 PM GMT")), NOW)
+        self.assertEqual(rows[0][1], 30)
+
+    def test_timing_from_reply_leaves_a_repeated_id_unknown(self):
+        t = lambda c: (f'<meeting id="{ID1}" title="t" created_at="{c}" updated_at="{c}">n</meeting>')
+        body = f'<meetings_data count="2">{t("2030-01-15T09:00:00.000+00:00")}{t("2030-01-15T09:01:00.000+00:00")}</meetings_data>'
+        self.assertEqual(pc.timing_from_reply(body, {ID1}), {})
+
+    def test_timing_ignores_ids_nobody_asked_for(self):
+        body = reply(meeting(ID2))
+        self.assertEqual(pc.timing_from_reply(body, {ID1}), {})
+
+
 class ParseInstant(unittest.TestCase):
     def test_offset_applied(self):
         got = pc.parse_instant("Jan 15, 2030 9:00 AM GMT+2")
