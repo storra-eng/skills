@@ -184,7 +184,7 @@ def parse_meetings(text, now, timing=None):
         for k, v in ((timing or {}).get(mid) or {}).items():
             a.setdefault(k, v)
         # `meeting_at` is an ISO instant with its offset: no zone name to misread. The human `date`
-        # is only the fallback (a bare `GMT` read as unknown for a whole winter, STO-999).
+        # is only the fallback (a bare `GMT` read as unknown for a whole winter).
         inst = parse_iso(a.get("meeting_at")) or parse_instant(a.get("date"))
         age_min = None if inst is None else int((now - inst).total_seconds() // 60)
         # A start in the FUTURE is a misread date, not a very young meeting: unknown, which the

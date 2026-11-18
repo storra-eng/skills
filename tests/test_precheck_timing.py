@@ -1,4 +1,4 @@
-"""--rows mode: note timing backfilled from get_meetings (STO-999). Synthetic data only."""
+"""--rows mode: note timing backfilled from get_meetings. Synthetic data only."""
 import http.server
 import threading
 import unittest
@@ -32,7 +32,7 @@ class RowsTiming(unittest.TestCase):
         return pc.run(args, env=self.env, now=NOW)
 
     def test_rows_mode_backfills_note_timing_from_get_meetings(self):
-        # The live list reply stopped carrying created_at/updated_at (STO-999).
+        # The live list reply stopped carrying created_at/updated_at.
         got = (f'<meetings_data count="1"><meeting id="{ID1}" title="t" date="Jan 15, 2030 9:00 AM GMT" '
                'created_at="2030-01-15T09:00:40.000+00:00" updated_at="2030-01-15T09:50:40.000+00:00">'
                'n</meeting></meetings_data>')

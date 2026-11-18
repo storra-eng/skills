@@ -51,7 +51,8 @@ skills/ActionsToIssues/     the skill; publish or copy this folder as-is
   SKILL.md                          instructions + frontmatter (env vars, MCP servers, permissions)
   config.example.yaml               your Linear team/projects/labels/people, scope rules, caps
   reference/                        policy, card and issue format, state file
-  scripts/granola_precheck.py       zero-token pre-check (Python 3, standard library only)
+  scripts/granola_precheck.py       zero-token pre-check: fetch, classify, verdict (Python 3, standard library only)
+  scripts/granola_reply.py          parser for Granola's meeting-list reply, imported by the pre-check
 tests/                              unit and loopback end-to-end tests, synthetic data only
 docs/                               threat model, OpenClaw notes, Claude Code notes
 ```
@@ -84,6 +85,8 @@ docs/                               threat model, OpenClaw notes, Claude Code no
    python3 skills/ActionsToIssues/scripts/granola_precheck.py   # exit 0 idle, 10 work, 1 cannot tell
    ```
 
+   Copy the whole `scripts/` folder: the pre-check imports `granola_reply.py` from beside it.
+
    Start the agent unless the exit status is `0`, and paste the script's `new` / `defer` lines into the agent's
    prompt. It looks at yesterday and today (UTC), not just today, so a meeting that straddles midnight is not lost;
    it defers a meeting for 30 minutes after it starts (`--min-age`; it cannot see end times, so set this above your
@@ -93,6 +96,12 @@ docs/                               threat model, OpenClaw notes, Claude Code no
    MCP client that owns the OAuth session does that), an idle day costs roughly one agent run per access-token
    lifetime, not zero. It prints counts and ids only, never a title, a body or a token. Alert on a streak of non-zero
    exits, or a persistent failure quietly becomes a full-cost run on every tick.
+
+   **If you already keep your own record of which meetings are handled** (a database, a ledger issue), add `--rows`: the
+   script then needs no state file and prints `OK seen=<n> others=<m>` followed by one line per meeting,
+   `id <meeting id> <minutes since start> <note length in seconds> <minutes since last update>` (`unknown` where a value
+   could not be read), and leaves deciding what is new to you. It exits `0` on a well-formed answer and `1` on anything
+   else, and a failure must still wake your agent. `--days` sets how many UTC days to look back (default 2).
 
 ## Install
 
@@ -165,6 +174,29 @@ Short version; the full one is in [`docs/threat-model.md`](docs/threat-model.md)
   never become tracker issues; it is also a prompt rule, so prefer a Granola account that sees only what you intend.
 - **Credentials.** The pre-check sends a bearer token to one URL, refuses redirects and non-https endpoints, and never
   prints the token. Keep tokens out of the skill's working directory and out of prompts.
+
+## Related projects
+
+Other open-source work in the same space. These are different tools with different trade-offs, listed so you can pick
+the right one (licences and activity as seen on GitHub on 18 November 2026; check before relying on them).
+
+- [OneWave-AI/claude-skills](https://github.com/OneWave-AI/claude-skills), `meeting-to-tasks` (MIT). A Claude Code
+  skill that turns a pasted transcript into decisions, action items with owners and deadlines, and task files for
+  Linear, GitHub Issues and similar. It leans towards capturing more and flagging low confidence; this skill leans
+  towards filing less, reads Granola directly, and puts a recorded human approval in front of every issue.
+- [franzvill/action-sync](https://github.com/franzvill/action-sync) (MIT). A small app that has Claude turn a meeting
+  transcript into Jira tickets, with repository context. Jira rather than Linear, and a pasted transcript rather than
+  a connected notes tool. Last pushed March 2026.
+- [Granola's MCP server](https://docs.granola.ai/help-center/sharing/integrations/mcp) is what this skill reads from;
+  the skill does not replace it.
+
+## Acknowledgements
+
+- The [Agent Skills](https://agentskills.io) open format ([specification](https://github.com/agentskills/agentskills),
+  Apache-2.0), which gives the skill its folder layout and `SKILL.md` frontmatter.
+- [OpenClaw](https://docs.openclaw.ai) and its ClawHub registry, one of the two hosts this is written for.
+- [Granola](https://www.granola.ai) and [Linear](https://linear.app) for the MCP servers the skill talks to. This
+  project is not affiliated with or endorsed by either.
 
 ## Tests
 
