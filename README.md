@@ -121,7 +121,7 @@ Licences and activity as seen on GitHub on 18 November 2026; check before relyin
 
 ## Contributing and licence
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md). MIT, see [`LICENSE`](LICENSE). Derived from an internal meeting-triage
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) (includes the Tessl review and evals that run on PRs). MIT, see [`LICENSE`](LICENSE). Derived from an internal meeting-triage
 assistant; only the generic policy and pre-check were carried over, with no deployment machinery, tracker data or real
 meeting content. OpenClaw statements come from its public docs as read on 9 October 2026 (linked in
 [`docs/openclaw.md`](docs/openclaw.md)); verify them against your install.

@@ -1,0 +1,30 @@
+{
+  "context": "A daily standup that contains only progress reports - checks that the actions-to-issues skill behaves as its policy says.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "proposes_no_cards",
+      "description": "The result contains zero approval cards and says nothing new was found.",
+      "max_score": 4,
+      "category": "INTENT"
+    },
+    {
+      "name": "recognises_progress_not_work",
+      "description": "The result explains, briefly, that the items are progress on existing work (finish / continue / still on), not new work.",
+      "max_score": 2,
+      "category": "DESIGN"
+    },
+    {
+      "name": "ends_with_result_line",
+      "description": "The result ends with exactly one RESULT: line.",
+      "max_score": 1,
+      "category": "INTEGRATION"
+    },
+    {
+      "name": "creates_no_issues",
+      "description": "The result does not claim to have created or filed any Linear issue.",
+      "max_score": 2,
+      "category": "MUST_NOT"
+    }
+  ]
+}

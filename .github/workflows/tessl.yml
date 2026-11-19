@@ -1,0 +1,59 @@
+# Quality gate for the skill: a Tessl review (scored, fails under the threshold) and the eval scenarios in
+# skills/actions-to-issues/evals (agent run with and without the skill). Needs the TESSL_TOKEN secret and the
+# TESSL_WORKSPACE variable; without them (and on fork PRs, which get no secrets) the job reports a notice and passes.
+name: tessl
+
+on:
+  pull_request:
+    paths:
+      - "skills/actions-to-issues/**"
+      - ".github/workflows/tessl.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tessl-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  skill:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
+      WORKSPACE: ${{ vars.TESSL_WORKSPACE }}
+      REVIEW_THRESHOLD: ${{ vars.TESSL_REVIEW_THRESHOLD || '80' }}
+    steps:
+      - name: Check Tessl is configured
+        id: cfg
+        run: |
+          if [ -z "$TESSL_TOKEN" ] || [ -z "$WORKSPACE" ]; then
+            echo "::notice::Tessl skipped: set the TESSL_TOKEN secret and the TESSL_WORKSPACE variable (not available on fork PRs)."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.cfg.outputs.run == 'true'
+        uses: actions/checkout@v4
+      - if: steps.cfg.outputs.run == 'true'
+        uses: tesslio/setup-tessl@v2
+        with:
+          token: ${{ secrets.TESSL_TOKEN }}
+      - name: Lint
+        if: steps.cfg.outputs.run == 'true'
+        run: tessl skill lint ./skills/actions-to-issues
+      - name: Review (fails under the threshold)
+        if: steps.cfg.outputs.run == 'true'
+        run: tessl review run ./skills/actions-to-issues --workspace "$WORKSPACE" --json --threshold "$REVIEW_THRESHOLD"
+      - name: Evals (agent with and without the skill)
+        if: steps.cfg.outputs.run == 'true'
+        run: |
+          tessl eval run ./skills/actions-to-issues --wait --label "pr-${{ github.event.pull_request.number || github.run_id }}"
+          {
+            echo "## Tessl evals"
+            echo '```'
+            tessl eval view --last
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,30 @@
+{
+  "context": "A personal meeting that must be left out of the tracker - checks that the actions-to-issues skill behaves as its policy says.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "skips_personal",
+      "description": "No card, quote or detail from the dentist meeting appears in the cards or the result, beyond noting it was skipped as out of scope.",
+      "max_score": 4,
+      "category": "MUST_NOT"
+    },
+    {
+      "name": "proposes_the_work_one",
+      "description": "Exactly one card is produced, for renaming the Teams tab to Workspaces, in the `Web app` project.",
+      "max_score": 3,
+      "category": "INTENT"
+    },
+    {
+      "name": "states_skip_reason",
+      "description": "The result records that the personal meeting was skipped, with a short reason.",
+      "max_score": 2,
+      "category": "DESIGN"
+    },
+    {
+      "name": "ends_with_result_line",
+      "description": "The result ends with exactly one RESULT: line.",
+      "max_score": 1,
+      "category": "INTEGRATION"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "context": "A meeting that settles one clear, trackable piece of work - checks that the actions-to-issues skill behaves as its policy says.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "one_card",
+      "description": "Exactly one approval card is produced, for the dead-letter queue work.",
+      "max_score": 3,
+      "category": "INTENT"
+    },
+    {
+      "name": "title_is_outcome",
+      "description": "The card title names an outcome (for example adding a dead-letter queue and alerting for failed billing webhooks), not the conversation.",
+      "max_score": 2,
+      "category": "DESIGN"
+    },
+    {
+      "name": "quote_verbatim",
+      "description": "The card has a Quote line copied verbatim from the meeting text above.",
+      "max_score": 2,
+      "category": "DESIGN"
+    },
+    {
+      "name": "search_line",
+      "description": "The card has an Existing search line saying what was searched and that nothing matched.",
+      "max_score": 2,
+      "category": "DESIGN"
+    },
+    {
+      "name": "categorisation_from_config",
+      "description": "The card names the project `Platform`, a label from the config (not invented), and assigns Alex because Alex was named.",
+      "max_score": 3,
+      "category": "INTEGRATION"
+    },
+    {
+      "name": "priority_has_reason",
+      "description": "Priority is set (High or Urgent) citing the stated deadline, not left at a default.",
+      "max_score": 1,
+      "category": "EDGE_CASE"
+    },
+    {
+      "name": "card_id_format",
+      "description": "The card has a card id of the form m-0001-1.",
+      "max_score": 1,
+      "category": "INTEGRATION"
+    },
+    {
+      "name": "no_invented_requirements",
+      "description": "The card adds no requirement nobody voiced (no extra tooling, metrics or owners).",
+      "max_score": 2,
+      "category": "MUST_NOT"
+    }
+  ]
+}
