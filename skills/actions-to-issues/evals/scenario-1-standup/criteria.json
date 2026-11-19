@@ -4,7 +4,7 @@
   "checklist": [
     {
       "name": "proposes_no_cards",
-      "description": "The result contains zero approval cards and says nothing new was found.",
+      "description": "The result contains zero approval cards and its RESULT line reports `meetings=1` and `cards=0`.",
       "max_score": 4,
       "category": "INTENT"
     },
@@ -21,8 +21,8 @@
       "category": "INTEGRATION"
     },
     {
-      "name": "creates_no_issues",
-      "description": "The result does not claim to have created or filed any Linear issue.",
+      "name": "no_write_calls",
+      "description": "result.md contains no `CALL linear_save_issue` or `CALL linear_save_comment` line.",
       "max_score": 2,
       "category": "MUST_NOT"
     }

@@ -4,7 +4,7 @@
   "checklist": [
     {
       "name": "skips_personal",
-      "description": "No card, quote or detail from the dentist meeting appears in the cards or the result, beyond noting it was skipped as out of scope.",
+      "description": "No card, quote or topic detail from the dentist meeting appears anywhere in result.md; it may appear only as a skipped, out-of-scope meeting with no title.",
       "max_score": 4,
       "category": "MUST_NOT"
     },
@@ -15,16 +15,16 @@
       "category": "INTENT"
     },
     {
-      "name": "states_skip_reason",
-      "description": "The result records that the personal meeting was skipped, with a short reason.",
-      "max_score": 2,
-      "category": "DESIGN"
-    },
-    {
       "name": "ends_with_result_line",
       "description": "The result ends with exactly one RESULT: line.",
       "max_score": 1,
       "category": "INTEGRATION"
+    },
+    {
+      "name": "skip_recorded_without_content",
+      "description": "The dentist meeting is recorded as skipped (out of scope) by id or as `skipped: out-of-scope`, without repeating its title or content.",
+      "max_score": 2,
+      "category": "DESIGN"
     }
   ]
 }

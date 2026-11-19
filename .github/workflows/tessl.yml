@@ -1,6 +1,7 @@
-# Quality gate for the skill: a Tessl review (scored, fails under the threshold) and the eval scenarios in
-# skills/actions-to-issues/evals (agent run with and without the skill). Needs the TESSL_TOKEN secret and the
-# TESSL_WORKSPACE variable; without them (and on fork PRs, which get no secrets) the job reports a notice and passes.
+# Skill quality: lint, a Tessl review (fails under the threshold) and the eval scenarios in
+# skills/actions-to-issues/evals (an agent with and without the skill; scores go to the job summary, they do not gate).
+# Needs the TESSL_TOKEN secret and TESSL_WORKSPACE variable. Without them, and on fork or Dependabot PRs (no secrets),
+# the job passes with a notice having run nothing: do not make this check required until it is configured.
 name: tessl
 
 on:
@@ -15,19 +16,22 @@ permissions:
 
 concurrency:
   group: tessl-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   skill:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
-      TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
       WORKSPACE: ${{ vars.TESSL_WORKSPACE }}
       REVIEW_THRESHOLD: ${{ vars.TESSL_REVIEW_THRESHOLD || '80' }}
+      EVAL_AGENT: ${{ vars.TESSL_EVAL_AGENT }}
+      EVAL_MODEL: ${{ vars.TESSL_EVAL_MODEL }}
     steps:
       - name: Check Tessl is configured
         id: cfg
+        env:
+          TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
         run: |
           if [ -z "$TESSL_TOKEN" ] || [ -z "$WORKSPACE" ]; then
             echo "::notice::Tessl skipped: set the TESSL_TOKEN secret and the TESSL_WORKSPACE variable (not available on fork PRs)."
@@ -36,9 +40,9 @@ jobs:
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
       - if: steps.cfg.outputs.run == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - if: steps.cfg.outputs.run == 'true'
-        uses: tesslio/setup-tessl@v2
+        uses: tesslio/setup-tessl@25ec223fc0da33b41b8044ff5ab2b85235f4f91e # v2
         with:
           token: ${{ secrets.TESSL_TOKEN }}
       - name: Lint
@@ -46,11 +50,18 @@ jobs:
         run: tessl skill lint ./skills/actions-to-issues
       - name: Review (fails under the threshold)
         if: steps.cfg.outputs.run == 'true'
+        env:
+          TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
         run: tessl review run ./skills/actions-to-issues --workspace "$WORKSPACE" --json --threshold "$REVIEW_THRESHOLD"
       - name: Evals (agent with and without the skill)
         if: steps.cfg.outputs.run == 'true'
+        env:
+          TESSL_TOKEN: ${{ secrets.TESSL_TOKEN }}
         run: |
-          tessl eval run ./skills/actions-to-issues --wait --label "pr-${{ github.event.pull_request.number || github.run_id }}"
+          args=(--wait --label "pr-${{ github.event.pull_request.number || github.run_id }}")
+          [ -n "$EVAL_AGENT" ] && args+=(--agent "$EVAL_AGENT")
+          [ -n "$EVAL_MODEL" ] && args+=(--model "$EVAL_MODEL")
+          tessl eval run ./skills/actions-to-issues "${args[@]}"
           {
             echo "## Tessl evals"
             echo '```'
