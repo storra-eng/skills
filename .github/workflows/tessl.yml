@@ -61,10 +61,13 @@ jobs:
           args=(--wait --label "pr-${{ github.event.pull_request.number || github.run_id }}")
           [ -n "$EVAL_AGENT" ] && args+=(--agent "$EVAL_AGENT")
           [ -n "$EVAL_MODEL" ] && args+=(--model "$EVAL_MODEL")
-          tessl eval run ./skills/actions-to-issues "${args[@]}"
+          tessl eval run ./skills/actions-to-issues "${args[@]}" | tee eval-run.log
+          # `eval view --last` finds nothing in CI, so read the run id from the "eval-runs/<id>" link instead.
+          run_id="$(grep -oE 'eval-runs/[0-9a-f-]{36}' eval-run.log | head -1 | cut -d/ -f2)"
+          [ -n "$run_id" ] || { echo "::error::No eval run id in the output"; exit 1; }
           {
             echo "## Tessl evals"
             echo '```'
-            tessl eval view --last
+            tessl eval view "$run_id"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"

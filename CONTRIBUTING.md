@@ -40,7 +40,7 @@ The `tessl` workflow runs on pull requests that touch `skills/actions-to-issues/
   with a notice and runs nothing. Don't make `tessl` a required check until it is configured.
 - Optional variables: `TESSL_REVIEW_THRESHOLD`, `TESSL_EVAL_AGENT`, `TESSL_EVAL_MODEL`.
 - A first run scored 76 on review (now 84) and lifted evals from 83% to 98% with the skill. Each eval run costs about
-  110 Tessl credits, so it only runs when the skill changes.
+  110 Tessl credits per run; it runs when the skill or the workflow file changes, and on manual dispatch.
 
 Configured for this repo: workspace `storra`, project `storra/skills` (`tessl.json`), secret `TESSL_TOKEN` (key `skills-ci`,
 role publisher, expires 19 Nov 2027), variable `TESSL_WORKSPACE`. To rotate the key, from a logged-in machine:

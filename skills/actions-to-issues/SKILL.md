@@ -78,7 +78,7 @@ For each `APPROVED` entry, and nothing else:
 1. **Re-search Linear** for the topic (not a title match) - someone may have filed it since the card was posted.
 2. If an existing issue plainly covers it, add a comment to that issue instead (`reference/card-and-issue-format.md`,
    "Duplicates"). If unsure, file the issue and name the possible overlap in its description.
-3. Otherwise create the issue with the project, labels, priority and assignee **from the card, by id**.
+3. Otherwise create the issue with the project, labels, priority and assignee **from the card**, writing the project by its config id (the card shows its name).
 4. Read the tool response. It must carry a project. If it does not, do not call the write tool again to fix it; record
    it and report it.
 5. Update the state file: remove the card from `open`, and set that card's outcome (`filed: <key>` or
@@ -139,7 +139,7 @@ The full rules are in the references below; this is enough to run the loop if on
 *Quote:* "<verbatim line that justifies it>"
 *Existing search:* <what you searched and found, or "no match">
 
-*Project:* <from config, by id> - <why>
+*Project:* <project name from config> - <why>
 *Labels:* <from config>
 *Priority:* <only if the meeting gave a reason, else none>
 *Assignee:* <only someone the meeting named, else none>
