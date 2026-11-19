@@ -1,5 +1,5 @@
 ---
-name: ActionsToIssues
+name: actions-to-issues
 description: Turn new Granola meeting notes into Linear issues, one human approval per issue. Use to triage meeting notes into trackable work. Reads untrusted text; never files without an approval the host enforces.
 license: MIT
 compatibility: Needs the Granola and Linear MCP servers, a host that enforces human approval before any Linear write, and Python 3 for the optional pre-check script.

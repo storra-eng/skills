@@ -1,13 +1,13 @@
 # The pre-check
 
-`skills/ActionsToIssues/scripts/granola_precheck.py` makes one Granola `list_meetings` call and says whether to start
+`skills/actions-to-issues/scripts/granola_precheck.py` makes one Granola `list_meetings` call and says whether to start
 the agent. Python 3.9+, standard library only. Copy the whole `scripts/` folder: it imports `granola_reply.py` from
 beside it.
 
 ## Run it
 
 ```bash
-python3 skills/ActionsToIssues/scripts/granola_precheck.py
+python3 skills/actions-to-issues/scripts/granola_precheck.py
 ```
 
 | Exit | Meaning | Do |

@@ -1,6 +1,6 @@
 # skills
 
-Agent skills from Storra. Currently one: **ActionsToIssues**, which turns new **Granola** meeting notes into **Linear**
+Agent skills from Storra. Currently one: **actions-to-issues**, which turns new **Granola** meeting notes into **Linear**
 issues, with **a human approval for every issue**.
 
 It is a skill (instructions plus one script), not a service. It runs in [OpenClaw](https://docs.openclaw.ai) and Claude
@@ -51,14 +51,14 @@ tools, started only after the host has recorded an approval.
 
 | Host | How |
 |---|---|
-| Claude Code | Copy `skills/ActionsToIssues` into `.claude/skills/` or `~/.claude/skills/`; keep Linear write tools on **ask** or **deny**. See [`docs/claude-code.md`](docs/claude-code.md) |
+| Claude Code | Copy `skills/actions-to-issues` into `.claude/skills/` or `~/.claude/skills/`; keep Linear write tools on **ask** or **deny**. See [`docs/claude-code.md`](docs/claude-code.md) |
 | OpenClaw | `openclaw skills install @<publisher>/actions-to-issues` once published, or copy the folder into `<workspace>/skills/`. See [`docs/openclaw.md`](docs/openclaw.md) |
 
 Installing does **not** configure approvals.
 
 ## Configure
 
-1. Copy [`config.example.yaml`](skills/ActionsToIssues/config.example.yaml) somewhere private and fill it in: team,
+1. Copy [`config.example.yaml`](skills/actions-to-issues/config.example.yaml) somewhere private and fill it in: team,
    allowed projects, labels and people (with ids), company email domains, caps. The skill invents none of these.
 2. Set the environment:
 
@@ -97,9 +97,9 @@ Full version and hardening steps: [`docs/threat-model.md`](docs/threat-model.md)
 
 | Path | What |
 |---|---|
-| `skills/ActionsToIssues/` | The skill; copy this folder as-is |
-| `skills/ActionsToIssues/SKILL.md`, `config.example.yaml`, `reference/` | Instructions, config template, policy and formats |
-| `skills/ActionsToIssues/scripts/` | Zero-token pre-check and its reply parser |
+| `skills/actions-to-issues/` | The skill; copy this folder as-is |
+| `skills/actions-to-issues/SKILL.md`, `config.example.yaml`, `reference/` | Instructions, config template, policy and formats |
+| `skills/actions-to-issues/scripts/` | Zero-token pre-check and its reply parser |
 | `docs/` | Threat model, pre-check, OpenClaw and Claude Code notes |
 | `tests/` | Unit and loopback tests, synthetic data only |
 
