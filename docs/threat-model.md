@@ -64,6 +64,20 @@ exists without an approved card. On platforms without that, approximate it with 
 - Platform behaviour described in [`openclaw.md`](openclaw.md) is from public documentation and unverified on a live
   install.
 
+## Hardening the split
+
+In order of value:
+
+1. **Read-only until approved.** The identity that reads meetings never holds Linear's write tools (`save_issue`,
+   `save_comment`). Linear's MCP exposes many more write tools (labels, projects, documents, attachments); this skill
+   needs only those two, so expose nothing else for writing.
+2. **A separate filing identity**, reachable only by the people allowed to approve, receiving the approved card text
+   from the approval store or the approved chat thread, never from the proposer's memory.
+3. **Caps** (`limits` in the config) so a manipulated run can propose only a handful of cards.
+4. **A per-call confirmation** on the write tools where the platform offers one.
+5. **A current, best-tier model.** It reduces injection success; it does not eliminate it.
+6. **Audit after the fact:** every issue the skill created should trace to an approved card. Alert when one does not.
+
 ## Reporting a problem
 
 Open a private security advisory on the repository rather than a public issue.
