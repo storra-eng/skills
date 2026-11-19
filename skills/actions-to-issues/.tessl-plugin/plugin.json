@@ -1,5 +1,5 @@
 {
-  "name": "local/actions-to-issues",
+  "name": "storra/actions-to-issues",
   "description": "Turn new Granola meeting notes into Linear issues, one human approval per issue. Use to triage meeting notes into trackable work. Reads untrusted text; never files without an approval the host enforces.",
   "private": true,
   "skills": ["."],

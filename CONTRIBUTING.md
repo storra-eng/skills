@@ -39,24 +39,23 @@ The `tessl` workflow runs on pull requests that touch `skills/actions-to-issues/
 - No `TESSL_TOKEN` secret or `TESSL_WORKSPACE` variable (and fork or Dependabot PRs, which get no secrets): the job passes
   with a notice and runs nothing. Don't make `tessl` a required check until it is configured.
 - Optional variables: `TESSL_REVIEW_THRESHOLD`, `TESSL_EVAL_AGENT`, `TESSL_EVAL_MODEL`.
-- API keys expire (30 days unless `--ttl` or `--expiry-date` is passed); renew before then or the job fails.
+- A first run scored 76 on review (now 84) and lifted evals from 83% to 98% with the skill. Each eval run costs about
+  110 Tessl credits, so it only runs when the skill changes.
 
-Maintainer setup, once:
+Configured for this repo: workspace `storra`, project `storra/skills` (`tessl.json`), secret `TESSL_TOKEN` (key `skills-ci`,
+role publisher, expires 19 Nov 2027), variable `TESSL_WORKSPACE`. To rotate the key, from a logged-in machine:
 
 ```bash
-tessl login
-tessl api-key create --workspace <workspace> --name ci --ttl 1y
-gh secret set TESSL_TOKEN -R storra-eng/skills
-gh variable set TESSL_WORKSPACE -R storra-eng/skills --body <workspace>
+tessl api-key create --workspace storra --name skills-ci-2 --role publisher --ttl 1y
 ```
 
-Then set `name` in `skills/actions-to-issues/.tessl-plugin/plugin.json` to `<workspace>/actions-to-issues`, and check the
-first run: the plugin name and `--workspace` must agree.
+Put the printed key in the `TESSL_TOKEN` secret (`gh secret set TESSL_TOKEN -R storra-eng/skills`), confirm a PR run
+passes, then `tessl api-key delete --workspace storra skills-ci`.
 
 Run it locally:
 
 ```bash
-tessl review run skills/actions-to-issues --workspace <workspace>
+tessl review run skills/actions-to-issues --workspace storra
 tessl eval run skills/actions-to-issues
 ```
 

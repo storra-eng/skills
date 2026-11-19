@@ -1,6 +1,6 @@
 ---
 name: actions-to-issues
-description: Turn new Granola meeting notes into Linear issues, one human approval per issue. Use to triage meeting notes into trackable work. Reads untrusted text; never files without an approval the host enforces.
+description: Turn new Granola meeting notes (action items, follow-ups) into Linear issues, one human approval per issue. Use when asked to triage meeting notes, turn meeting action items into trackable work, or file follow-ups from Granola. Reads untrusted text; never files without an approval the host enforces.
 license: MIT
 compatibility: Needs the Granola and Linear MCP servers, a host that enforces human approval before any Linear write, and Python 3 for the optional pre-check script.
 metadata: {"openclaw": {"homepage": "https://github.com/storra-eng/skills", "requires": {"bins": ["python3"], "env": ["MN2L_CONFIG", "MN2L_STATE"]}}, "mcpServers": ["granola", "linear"], "optionalEnv": ["GRANOLA_ACCESS_TOKEN", "MCP_AUTH_FILE", "MCP_AUTH_SERVER", "GRANOLA_MCP_URL"], "permissions": {"read": ["granola: list_meetings, get_meetings, get_meeting_transcript", "linear: list_issues, get_issue, list_projects, list_issue_labels, list_users, list_teams"], "write": ["linear: save_issue, save_comment"], "writeRequiresHumanApproval": true, "writeEnforcedByThisSkill": false}}
@@ -9,7 +9,7 @@ metadata: {"openclaw": {"homepage": "https://github.com/storra-eng/skills", "req
 # Meeting notes to Linear
 
 Turn **new meeting notes** into **Linear issues**, with a **human approval per issue** in between. You read other
-people's words and you can write to a shared tracker. That combination is the risk, so the rules below are not style.
+people's words and you can write to a shared tracker. That combination is the risk.
 
 ## The one rule
 
@@ -64,8 +64,7 @@ report `status=error detail=linear-write-unavailable`, change nothing, and leave
    in the state file with a reason so it is never re-examined. When unsure, skip.
 4. **Read the note** with `get_meetings` (up to 10 ids per call). Fetch the transcript only if the summary is too thin
    to write a decent issue from.
-5. **Extract candidates.** Apply the domain lenses and the **New-work test** (`reference/policy.md`). Most meetings
-   yield zero. Zero is the expected answer, not a failed run.
+5. **Extract candidates.** Apply the domain lenses and the **New-work test** (`reference/policy.md`). Zero is the expected answer.
 6. **One card per candidate**, in the exact format of `reference/card-and-issue-format.md`, posted with the chat tool
    or handed to the host's approval mechanism. Never batch several issues into one card. Respect the config caps. Write
    each card's id into the state file **immediately**, with its meeting id and title - that line is the only thing
@@ -121,10 +120,36 @@ RESULT: status=<nothing-new|proposed|filed|error> meetings=<n> cards=<n> filed=<
 Use `status=error` for anything you could not complete - never report `nothing-new` when you could not look. Omit
 `seen`/`others` only if the Granola call itself failed.
 
+## The card and the test, in brief
+
+The full rules are in the references below; this is enough to run the loop if one is unavailable.
+
+- **New-work test** (all four, or do not propose): (1) a Linear search finds nothing that already covers it; (2) it is
+  new work from this meeting, not progress on existing work ("finish", "continue", "still on"); (3) someone decided it,
+  not just floated it; (4) someone would still care in a week. When in doubt, do not file.
+- **Card**, one per item, blank line between blocks:
+
+```text
+*<title naming an outcome>*
+
+<2-4 lines: context, the ask, what closes it>
+
+*Card:* <meeting id>-<n>
+*Source:* <meeting title>, <date>
+*Quote:* "<verbatim line that justifies it>"
+*Existing search:* <what you searched and found, or "no match">
+
+*Project:* <from config, by id> - <why>
+*Labels:* <from config>
+*Priority:* <only if the meeting gave a reason, else none>
+*Assignee:* <only someone the meeting named, else none>
+```
+
 ## References
 
 - `reference/policy.md` - scope filter, New-work test, domain lenses, several captures of one meeting.
 - `reference/card-and-issue-format.md` - the card, the issue, duplicates.
 - `reference/state-file.md` - the state file format and how to keep it bounded.
 - `config.example.yaml` - the config you are given.
-- `scripts/granola_precheck.py` - zero-token pre-check the host runs before starting you.
+- `scripts/granola_precheck.py` - zero-token pre-check the host runs before starting you; it imports
+  `scripts/granola_reply.py` (the parser for Granola's meeting-list reply).
