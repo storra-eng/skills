@@ -22,19 +22,14 @@ Contributing: see [CONTRIBUTING.md](CONTRIBUTING.md) (rules, tests, hooks, Tessl
 - After a human approves, re-searches Linear, then files the issue or comments on an existing one.
 - Records what it handled in a state file, so nothing is proposed twice.
 
-```text
- scheduler -> granola_precheck.py -> idle? --yes--> stop (zero tokens)
-                    | no, or cannot tell
-                    v
-        PROPOSE run (read-only tools)
-   Granola > scope filter > New-work test > Linear search > card per item
-                    |
-                    v  posted to chat (e.g. Slack)
-        a human approves or rejects each card      <-- enforced by the HOST
-                    | approved
-                    v
-        FILE run (write tools, approved items only)
-   re-search Linear > create issue / comment on duplicate > update state
+```mermaid
+flowchart TD
+    Sched["scheduler"] --> Pre["granola_precheck.py"]
+    Pre -->|"idle"| Stop["stop (zero tokens)"]
+    Pre -->|"not idle, or cannot tell"| Prop["PROPOSE run (read-only tools)<br/>Granola > scope filter > New-work test<br/>> Linear search > card per item"]
+    Prop -->|"posted to chat, e.g. Slack"| Human{"human approves<br/>each card<br/>(enforced by the HOST)"}
+    Human -->|"rejected"| Rec["state file: outcome rejected, nothing filed"]
+    Human -->|"approved"| File["FILE run (write tools, approved items only)<br/>re-search Linear > create issue / comment on duplicate<br/>> update state"]
 ```
 
 Two phases with two tool sets is the core design: PROPOSE needs read-only access, and only FILE needs Linear write
