@@ -24,3 +24,4 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+# Dependabot has org-level access to storra-eng/agent-automation (private reusable workflows).
