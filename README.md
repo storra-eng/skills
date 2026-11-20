@@ -6,6 +6,8 @@ issues, with **a human approval for every issue**.
 It is a skill (instructions plus one script), not a service. It runs in [OpenClaw](https://docs.openclaw.ai) and Claude
 Code, and follows the [Agent Skills](https://agentskills.io) layout.
 
+Contributing: see [CONTRIBUTING.md](CONTRIBUTING.md) (rules, tests, hooks, Tessl review and evals).
+
 > **Read before installing.** It reads text other people wrote (transcripts) and can write to a shared tracker, so
 > prompt injection is the main risk. The skill states an approval rule; **it cannot enforce it.** Whether a human
 > approval really gates Linear writes depends on your host. See [Is the approval enforced?](#is-the-approval-enforced).
@@ -119,9 +121,8 @@ Licences and activity as seen on GitHub on 18 November 2026; check before relyin
 - [OpenClaw](https://docs.openclaw.ai) and ClawHub.
 - [Granola](https://www.granola.ai) and [Linear](https://linear.app). Not affiliated with or endorsed by either.
 
-## Contributing and licence
+## Licence and provenance
 
-- [`CONTRIBUTING.md`](CONTRIBUTING.md): rules, tests, hooks, and the Tessl review and evals that run on PRs.
 - MIT, see [`LICENSE`](LICENSE).
 - Derived from an internal meeting-triage assistant; only the generic policy and pre-check came across (no deployment
   machinery, tracker data or real meeting content).

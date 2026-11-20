@@ -1,6 +1,6 @@
 # Contributing
 
-Issues and pull requests are welcome.
+Issues and pull requests are welcome. Agent rules are in [`CLAUDE.md`](CLAUDE.md).
 
 ## Rules
 
@@ -19,6 +19,13 @@ python3 -m unittest discover -s tests -v   # tests (loopback fake MCP endpoint, 
 brew install pre-commit                    # or: pipx install pre-commit
 pre-commit install                         # once per clone; worktrees share it
 ```
+
+## Landing changes
+
+Maintainers work in a `git gtr` worktree and land straight on the default branch: rebase onto `origin/<default>`, run the
+checks above and `/code-review`, then fast-forward push. No pull request. Never commit in the main checkout, never
+force-push the default branch, never `--no-verify`. Dependabot and other bot PRs still arrive as PRs; outside
+contributors open a PR as usual.
 
 ## Git hook
 
