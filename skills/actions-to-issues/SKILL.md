@@ -33,10 +33,10 @@ report `status=error detail=linear-write-unavailable`, change nothing, and leave
 
 ## Inputs
 
-- **Config** at `$MN2L_CONFIG` (YAML; see `config.example.yaml` next to this file): the Linear team, the projects,
+- **Config** at `$MN2L_CONFIG` (YAML; see `assets/config.example.yaml`): the Linear team, the projects,
   labels and people you may use (with ids), scope rules, caps, link and attribution templates. Never invent a project,
   label or person; never create one.
-- **State** at `$MN2L_STATE` (JSON; see `reference/state-file.md`): meetings already handled and cards awaiting a
+- **State** at `$MN2L_STATE` (JSON; see `references/state-file.md`): meetings already handled and cards awaiting a
   decision. It is the only memory you have. If it exists but is unparseable, stop with `status=error`: treating it as
   empty would re-propose everything.
 - **Host-supplied decisions** (FILE phase): an `APPROVED` list, each entry with the card id, the approved card text and
@@ -60,12 +60,12 @@ report `status=error detail=linear-write-unavailable`, change nothing, and leave
    rule cannot know when a meeting ends.
 2. **Collapse duplicate captures** of one meeting (same title and same start time to the minute). Read one, record
    every id.
-3. **Scope filter.** Drop anything that is not company business (`reference/policy.md`). Record a skipped meeting
+3. **Scope filter.** Drop anything that is not company business (`references/policy.md`). Record a skipped meeting
    in the state file with a reason so it is never re-examined. When unsure, skip.
 4. **Read the note** with `get_meetings` (up to 10 ids per call). Fetch the transcript only if the summary is too thin
    to write a decent issue from.
-5. **Extract candidates.** Apply the domain lenses and the **New-work test** (`reference/policy.md`). Zero is the expected answer.
-6. **One card per candidate**, in the exact format of `reference/card-and-issue-format.md`, posted with the chat tool
+5. **Extract candidates.** Apply the domain lenses and the **New-work test** (`references/policy.md`). Zero is the expected answer.
+6. **One card per candidate**, in the exact format of `references/card-and-issue-format.md`, posted with the chat tool
    or handed to the host's approval mechanism. Never batch several issues into one card. Respect the config caps. Write
    each card's id into the state file **immediately**, with its meeting id and title - that line is the only thing
    carrying the card across runs.
@@ -76,7 +76,7 @@ report `status=error detail=linear-write-unavailable`, change nothing, and leave
 For each `APPROVED` entry, and nothing else:
 
 1. **Re-search Linear** for the topic (not a title match) - someone may have filed it since the card was posted.
-2. If an existing issue plainly covers it, add a comment to that issue instead (`reference/card-and-issue-format.md`,
+2. If an existing issue plainly covers it, add a comment to that issue instead (`references/card-and-issue-format.md`,
    "Duplicates"). If unsure, file the issue and name the possible overlap in its description.
 3. Otherwise create the issue with the project, labels, priority and assignee **from the card**, writing the project by its config id (the card shows its name).
 4. Read the tool response. It must carry a project. If it does not, do not call the write tool again to fix it; record
@@ -147,9 +147,9 @@ The full rules are in the references below; this is enough to run the loop if on
 
 ## References
 
-- `reference/policy.md` - scope filter, New-work test, domain lenses, several captures of one meeting.
-- `reference/card-and-issue-format.md` - the card, the issue, duplicates.
-- `reference/state-file.md` - the state file format and how to keep it bounded.
-- `config.example.yaml` - the config you are given.
+- `references/policy.md` - scope filter, New-work test, domain lenses, several captures of one meeting.
+- `references/card-and-issue-format.md` - the card, the issue, duplicates.
+- `references/state-file.md` - the state file format and how to keep it bounded.
+- `assets/config.example.yaml` - the config you are given.
 - `scripts/granola_precheck.py` - zero-token pre-check the host runs before starting you; it imports
   `scripts/granola_reply.py` (the parser for Granola's meeting-list reply).

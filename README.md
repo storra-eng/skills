@@ -55,7 +55,7 @@ Installing does **not** configure approvals.
 
 ## Configure
 
-1. Copy [`config.example.yaml`](skills/actions-to-issues/config.example.yaml) somewhere private and fill it in: team,
+1. Copy [`assets/config.example.yaml`](skills/actions-to-issues/assets/config.example.yaml) somewhere private and fill it in: team,
    allowed projects, labels and people (with ids), company email domains, caps. The skill invents none of these.
 2. Set the environment:
 
@@ -95,7 +95,7 @@ Full version and hardening steps: [`docs/threat-model.md`](docs/threat-model.md)
 | Path | What |
 |---|---|
 | `skills/actions-to-issues/` | The skill; copy this folder as-is |
-| `skills/actions-to-issues/SKILL.md`, `config.example.yaml`, `reference/` | Instructions, config template, policy and formats |
+| `skills/actions-to-issues/SKILL.md`, `assets/`, `references/` | Instructions, config template, policy and formats |
 | `skills/actions-to-issues/scripts/` | Zero-token pre-check and its reply parser |
 | `docs/` | Threat model, pre-check, OpenClaw and Claude Code notes |
 | `tests/` | Unit and loopback tests, synthetic data only |
