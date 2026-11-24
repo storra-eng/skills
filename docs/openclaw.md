@@ -84,6 +84,11 @@ namespace as unconfirmed**: the MCP page does not describe either.
 Because `auth: "oauth"` gives both entries a login for the same Linear account, the OAuth session for `linear_write`
 should belong to a **dedicated Linear user** (a service account), so "who filed this" is unambiguous and revocable.
 
+**Jira or GitHub instead of Linear:** the same two-entry split, with each entry's `toolFilter.include` taken from
+the adapter's "Read tools" and "Write tools" lists (`skills/actions-to-issues/references/tracker-<tracker>.md`). For
+GitHub, the read entry can use the read-only URL `https://api.githubcopilot.com/mcp/x/issues/readonly`. For Jira,
+exclude `executeWrite` and `executeDestructive` from both entries. Unverified on OpenClaw, like the rest of this page.
+
 ### Option B: a per-call approval via a plugin
 
 A small plugin registering `before_tool_call` and returning `requireApproval` for `save_issue` / `save_comment`, with

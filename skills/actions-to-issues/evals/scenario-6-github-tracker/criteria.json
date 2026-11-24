@@ -1,0 +1,36 @@
+{
+  "context": "The same decided work as scenario 2, with the GitHub tracker configured - checks that the actions-to-issues skill uses the tracker adapter's card lines and tools.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "one_card",
+      "description": "Exactly one approval card is produced, for the dead-letter queue work, with card id m-0006-1.",
+      "max_score": 3,
+      "category": "INTENT"
+    },
+    {
+      "name": "github_categorisation",
+      "description": "The card has a Repository line naming `example-org/api`, a Labels line using a configured label, and an Assignees line naming Alex (or `alex-example`).",
+      "max_score": 3,
+      "category": "INTEGRATION"
+    },
+    {
+      "name": "no_priority_field",
+      "description": "The card has no Priority line and invents no priority label; the deadline (the 12th) appears in the description instead.",
+      "max_score": 2,
+      "category": "EDGE_CASE"
+    },
+    {
+      "name": "search_pinned_to_repo",
+      "description": "The result calls `search_issues` with an owner and repo set (not an unscoped search) and the card's Existing search line reports no match.",
+      "max_score": 2,
+      "category": "DESIGN"
+    },
+    {
+      "name": "no_write_calls",
+      "description": "result.md contains no `CALL` to `issue_write` or `add_issue_comment`, and no Linear tool call.",
+      "max_score": 2,
+      "category": "MUST_NOT"
+    }
+  ]
+}

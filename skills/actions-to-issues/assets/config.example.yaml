@@ -1,6 +1,8 @@
 # Copy to a private location, fill in, and point MN2L_CONFIG at it. Never commit your real copy.
 # Everything here is yours to supply: the skill hardcodes no team, project, label or person.
 
+tracker: linear             # linear | jira | github; absent means linear. Instructions: references/tracker-<tracker>.md
+
 linear:
   team: "ENG"                # team key the issues are filed under
   projects:                  # the only projects a card may name; ids are what the write call gets
@@ -22,6 +24,23 @@ linear:
       id: "00000000-0000-4000-8000-0000000000c1"
       aliases: ["Alex"]
   default_assignee: null     # keep null: assign only people the meeting named
+
+# Only the block named by `tracker` is read. Fields per tracker are in references/tracker-<tracker>.md.
+# jira:
+#   cloud_id: "00000000-0000-4000-8000-0000000000d1"
+#   projects: [{key: "ENG", name: "Engineering", use_for: "backend and infrastructure"}]
+#   issue_types: ["Task", "Bug"]
+#   components: [{name: "Billing", id: "10001", project: "ENG"}]
+#   labels: ["meeting-action"]
+#   priorities: ["Highest", "High", "Medium", "Low"]
+#   people: [{name: "Alex Example", account_id: "000000:00000000-0000-4000-8000-0000000000c1", aliases: ["Alex"]}]
+#   default_assignee: null
+# github:
+#   repos: [{owner: "example-org", name: "web", use_for: "customer-facing web UI"}]
+#   labels: ["bug", "feature", "chore"]
+#   milestones: [{title: "Launch", number: 3, repo: "example-org/web"}]
+#   people: [{name: "Alex Example", login: "alex-example", aliases: ["Alex"]}]
+#   default_assignee: null
 
 scope:
   company_participant_domains: ["example.com"]

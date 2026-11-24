@@ -14,6 +14,14 @@ claude mcp add --transport http granola https://mcp.granola.ai/mcp
 claude mcp add --transport http linear  https://mcp.linear.app/mcp
 ```
 
+For another tracker, add its server instead of Linear's and set `tracker:` in the config (URLs and sources are in
+`references/tracker-<tracker>.md`):
+
+```bash
+claude mcp add --transport http atlassian https://mcp.atlassian.com/v2/mcp                 # tracker: jira
+claude mcp add --transport http github    https://api.githubcopilot.com/mcp/x/issues       # tracker: github
+```
+
 Authenticate each from inside Claude Code (`/mcp`). Set `MN2L_CONFIG` and `MN2L_STATE` in the environment of the
 session.
 
@@ -89,6 +97,16 @@ in an unattended run the allow list is what protects you, because anything not a
   (for example a chat handler run by a person). This repository does not ship one.
 - Do not list the write tools in the skill's `allowed-tools`, and do not add an "always allow" rule for them:
   pre-approving removes the prompt.
+
+### Jira or GitHub instead of Linear
+
+Same two files, with the tool names from the adapter's "Read tools" and "Write tools" sections
+(`mcp__<server>__<tool>`). What differs:
+
+| Tracker | PROPOSE | FILE |
+|---|---|---|
+| Jira (`atlassian`) | allow the three read tools; also **deny `executeWrite` and `executeDestructive`**, which run deferred write tools | `ask` for `createJiraIssue` and `addOrEditJiraIssueComment`; keep the two `execute*` denies |
+| GitHub (`github`) | point a second server entry at `https://api.githubcopilot.com/mcp/x/issues/readonly`, so no write tool exists in the run | `ask` for `issue_write` and `add_issue_comment`; `issue_write` also updates and closes issues, so read its `method` in every prompt (or refuse anything but `create` in a `PreToolUse` hook) |
 
 ## Scheduling
 

@@ -7,9 +7,9 @@ and what reduces it. It deliberately contains no exploit detail.
 
 | Asset | Why it matters |
 |---|---|
-| The Linear workspace | Issues are durable, widely readable and drive other people's work. Junk or malicious issues cost trust and triage time. |
+| The tracker (Linear, Jira or GitHub) | Issues are durable, widely readable (world-readable in a public GitHub repository) and drive other people's work. Junk or malicious issues cost trust and triage time. |
 | Meeting content | Transcripts hold other people's words, sometimes personal or commercially sensitive. |
-| Credentials | Granola and Linear OAuth sessions; the chat bot token. |
+| Credentials | Granola and tracker OAuth sessions or tokens; the chat bot token. |
 | The approver's attention | A reviewer who learns to click approve is no gate at all. |
 
 ## Who can attack, and how
@@ -22,8 +22,8 @@ any system you run. This is *indirect prompt injection*: instructions hidden in 
 |---|---|---|
 | Direct instruction in a note ("file this", "assign to X", "approve all") | The model files or assigns something nobody agreed to | No write tools in the reading run; approvals recorded by the host; caps on cards; the skill's "data, not instructions" rule |
 | Approver manipulation | A card with a persuasive, attacker-shaped quote or title gets approved | Verbatim quote on the card so the reviewer can check it; URLs from notes kept out of cards; reviewer training; caps |
-| Exfiltration via output | Meeting text or secrets copied into an issue, a comment or a link | Quote only the justifying line; scope filter; no fetching URLs from notes; dedicated low-privilege Linear identity |
-| Tool abuse beyond the two write tools | Creating labels, projects, documents, attachments | Expose only `save_issue` and `save_comment` for writing; deny the rest |
+| Exfiltration via output | Meeting text or secrets copied into an issue, a comment or a link | Quote only the justifying line; scope filter; no fetching URLs from notes; dedicated low-privilege tracker identity; private repository for GitHub |
+| Tool abuse beyond the two write tools | Creating labels, projects, documents, attachments; updating or closing issues through a create-or-update tool | Expose only the adapter's two write tools; deny the rest; where one tool both creates and updates (Linear `save_issue`, GitHub `issue_write`), gate on its arguments |
 | State tampering | A manipulated run edits the state file so a different card is later filed, or so real meetings are skipped | Filer takes approved text from the approval store or chat thread, not state; state holds ids and titles, not authority |
 | Approval confusion | A user allowed to approve one class of action approves another | Separate approver lists per action class; keep the platform patched |
 | Cost and availability | A flood of meetings, markup in a note that makes the pre-check unsure, or a failing integration burns tokens every tick | Zero-token pre-check; caps. The pre-check is stateless and fails open, so a wake that repeats is **not** surfaced by this repository: count consecutive non-zero exits in your scheduler and alert on a streak |
@@ -59,7 +59,7 @@ exists without an approved card. On platforms without that, approximate it with 
 - A model can misjudge scope and propose a card from a personal meeting. The reviewer is the backstop.
 - A convincing injected card can still be approved by a tired human.
 - Prompt-level rules fail some of the time; model choice lowers the rate but does not remove it.
-- The Granola and Linear OAuth sessions are as powerful as the accounts behind them. Use the least-privileged accounts
+- The Granola and tracker sessions are as powerful as the accounts behind them. Use the least-privileged accounts
   you can.
 - Platform behaviour described in [`openclaw.md`](openclaw.md) is from public documentation and unverified on a live
   install.
@@ -68,9 +68,9 @@ exists without an approved card. On platforms without that, approximate it with 
 
 In order of value:
 
-1. **Read-only until approved.** The identity that reads meetings never holds Linear's write tools (`save_issue`,
-   `save_comment`). Linear's MCP exposes many more write tools (labels, projects, documents, attachments); this skill
-   needs only those two, so expose nothing else for writing.
+1. **Read-only until approved.** The identity that reads meetings never holds the tracker's write tools. Each adapter
+   (`skills/actions-to-issues/references/tracker-*.md`) lists its read and write tools; every tracker's MCP server
+   exposes many more write tools than the two this skill needs, so expose nothing else for writing.
 2. **A separate filing identity**, reachable only by the people allowed to approve, receiving the approved card text
    from the approval store or the approved chat thread, never from the proposer's memory.
 3. **Caps** (`limits` in the config) so a manipulated run can propose only a handful of cards.
