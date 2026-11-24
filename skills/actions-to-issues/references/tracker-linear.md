@@ -20,8 +20,10 @@ adapters existed keep working unchanged).
 
 `save_issue`, `save_comment`
 
-- `save_issue` **creates** when no `id` is passed and **updates** when one is. A host splitting by tool name cannot
-  tell the two apart: use a prompt that shows the arguments, or a hook that refuses a call carrying `id`.
+- `save_issue` **creates** when no `id` is passed and **updates** when one is (per the server's own tool
+  descriptions). A host splitting by tool name cannot tell the two apart: use a prompt that shows the arguments, or a
+  hook that refuses a call carrying `id`. Treat `save_comment` the same way: a new comment never carries a comment
+  `id`.
 - The server has many more write tools (projects, labels, documents, attachments, releases). Allow the two above by
   name; never allow `mcp__<server>__*`.
 
@@ -56,6 +58,6 @@ linear:
 
 ## Read the response
 
-The create response must carry a project id. A project that did not match can be dropped with a success response.
-**Do not call `save_issue` again to fix it** - that is an unapproved write. Record it in the state file and report
-`detail=project-dropped`.
+The create response must carry a project id, and its labels and assignee must match the card. A value that did not
+match can be dropped with a success response. **Do not call `save_issue` again to fix it** - that is an unapproved
+write. Record it in the state file and report `detail=fields-dropped`.

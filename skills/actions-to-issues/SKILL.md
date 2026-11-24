@@ -3,7 +3,7 @@ name: actions-to-issues
 description: Turn new Granola meeting notes (action items, follow-ups) into tracker issues (Linear, Jira or GitHub Issues), one human approval per issue. Use when asked to triage meeting notes, turn meeting action items into trackable work, or file follow-ups from Granola. Reads untrusted text; never files without an approval the host enforces.
 license: MIT
 compatibility: Needs the Granola MCP server and one tracker's MCP server (Linear, Jira or GitHub; see references/tracker-*.md), a host that enforces human approval before any tracker write, and Python 3 for the optional pre-check script.
-metadata: {"openclaw": {"homepage": "https://github.com/storra-eng/skills", "requires": {"bins": ["python3"], "env": ["MN2L_CONFIG", "MN2L_STATE"]}}, "mcpServers": ["granola", "linear"], "trackerMcpServers": {"linear": "linear", "jira": "atlassian", "github": "github"}, "optionalEnv": ["GRANOLA_ACCESS_TOKEN", "MCP_AUTH_FILE", "MCP_AUTH_SERVER", "GRANOLA_MCP_URL"], "permissions": {"read": ["granola: list_meetings, get_meetings, get_meeting_transcript", "linear: list_issues, get_issue, list_projects, list_issue_labels, list_users, list_teams", "jira: searchJiraIssuesUsingJql, getJiraIssue, getAccessibleAtlassianResources", "github: search_issues, issue_read, get_label, list_issue_types"], "write": ["linear: save_issue, save_comment", "jira: createJiraIssue, addOrEditJiraIssueComment", "github: issue_write (method=create only), add_issue_comment"], "writeRequiresHumanApproval": true, "writeEnforcedByThisSkill": false}}
+metadata: {"openclaw": {"homepage": "https://github.com/storra-eng/skills", "requires": {"bins": ["python3"], "env": ["MN2L_CONFIG", "MN2L_STATE"]}}, "mcpServers": ["granola"], "trackerMcpServers": {"linear": "linear", "jira": "atlassian", "github": "github"}, "optionalEnv": ["GRANOLA_ACCESS_TOKEN", "MCP_AUTH_FILE", "MCP_AUTH_SERVER", "GRANOLA_MCP_URL"], "permissions": {"read": ["granola: list_meetings, get_meetings, get_meeting_transcript", "linear: list_issues, get_issue, list_projects, list_issue_labels, list_users, list_teams", "jira: searchJiraIssuesUsingJql, getJiraIssue, getAccessibleAtlassianResources", "github: search_issues, issue_read, get_label, list_issue_types"], "write": ["linear: save_issue, save_comment", "jira: createJiraIssue, addOrEditJiraIssueComment", "github: issue_write (method=create only), add_issue_comment"], "writeRequiresHumanApproval": true, "writeEnforcedByThisSkill": false}}
 ---
 
 # Meeting notes to issues
@@ -52,7 +52,8 @@ the items in the state file.
 
 Read the adapter files for the configured names once PROPOSE step 0 has found new work (never before that cheap
 check), and at the start of FILE. The `permissions` keys in the frontmatter are tracker names; `trackerMcpServers`
-maps each to the server name the docs register (Jira's is `atlassian`).
+maps each to the server name the docs register (Jira's is `atlassian`); a run needs `granola` plus the one tracker
+server.
 
 - Tracker: read references/tracker-<tracker>.md (default linear).
 
@@ -95,7 +96,7 @@ For each `APPROVED` entry, and nothing else:
 3. Otherwise create the issue with the categorisation **from the card**, passing values in the form the adapter's
    "Calls" table says (Linear ids, GitHub names and logins, Jira keys and account ids, all from the config).
 4. Read the tool response as the adapter's "Read the response" says. If a field is missing, do not call the write tool
-   again to fix it; record it and report it.
+   again to fix it; record it and report `detail=fields-dropped`.
 5. Update the state file: remove the card from `open`, and set that card's outcome (`filed: <key>` or
    `existing: <key>`) on the meeting's entry. Other cards of the same meeting are untouched.
 

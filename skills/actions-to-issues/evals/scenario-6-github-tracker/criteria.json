@@ -22,7 +22,7 @@
     },
     {
       "name": "search_pinned_to_repo",
-      "description": "The result calls `search_issues` with an owner and repo set (not an unscoped search) and the card's Existing search line reports no match.",
+      "description": "The result calls `search_issues` with owner and repo set for each configured repository (`example-org/api` and `example-org/web`), never an unscoped search, and the card's Existing search line reports no match.",
       "max_score": 2,
       "category": "DESIGN"
     },

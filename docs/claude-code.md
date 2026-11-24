@@ -105,7 +105,7 @@ Same two files, with the tool names from the adapter's "Read tools" and "Write t
 
 | Tracker | PROPOSE | FILE |
 |---|---|---|
-| Jira (`atlassian`) | allow the three read tools; also **deny `executeWrite` and `executeDestructive`**, which run deferred write tools | `ask` for `createJiraIssue` and `addOrEditJiraIssueComment`; keep the two `execute*` denies |
+| Jira (`atlassian`) | allow the three read tools; **deny `createJiraIssue`, `addOrEditJiraIssueComment`, `editJiraIssue`, `transitionJiraIssue`, `executeWrite` and `executeDestructive`** (the last two run deferred write tools); Jira has no read-only endpoint to fall back on | `ask` for `createJiraIssue` and `addOrEditJiraIssueComment` (refuse one that edits an existing comment); keep the `execute*`, edit and transition denies |
 | GitHub (`github`) | point a second server entry at `https://api.githubcopilot.com/mcp/x/issues/readonly`, so no write tool exists in the run | `ask` for `issue_write` and `add_issue_comment`; `issue_write` also updates and closes issues, so read its `method` in every prompt (or refuse anything but `create` in a `PreToolUse` hook) |
 
 ## Scheduling

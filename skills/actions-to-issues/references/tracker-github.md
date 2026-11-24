@@ -36,7 +36,7 @@ Leave `list_issues` out: it lists a whole repository, and the skill only runs to
 github:
   repos:                       # the only repositories a card may name; replaces "project"
     - {owner: "example-org", name: "web", use_for: "customer-facing web UI"}
-  labels: ["bug", "feature", "chore"]   # must already exist in each repo; never create one
+  labels: ["bug", "feature", "chore"]   # a card's labels must exist in its repo; checked before filing
   milestones: [{title: "Launch", number: 3, repo: "example-org/web"}]   # optional
   people: [{name: "Alex Example", login: "alex-example", aliases: ["Alex"]}]
   default_assignee: null
@@ -50,7 +50,7 @@ description.
 ```text
 *Repository:* <owner/name from config> - <why>
 *Labels:* <from config>
-*Milestone:* <only if the meeting tied it to one in the config, else none>
+*Milestone:* <only a config milestone whose repo is the card's repository, and only if the meeting tied it, else none>
 *Assignees:* <only people the meeting named, by login from config, else none>
 ```
 
@@ -58,7 +58,8 @@ description.
 
 | Step | Call |
 |---|---|
-| Search (both phases) | `search_issues` with `owner` and `repo` **always set** (unpinned, it searches all of GitHub) and `query` = the topic. Ignore pull requests in the results |
+| Search (both phases) | One `search_issues` per configured repo, with `owner` and `repo` **always set** (unpinned, it searches all of GitHub) and `query` = the topic with any `word:` qualifier (`repo:`, `org:`, `is:`) removed. Ignore pull requests in the results |
+| Check labels | `get_label` for each card label in the card's repo, before creating. A label that is missing is left off (record and report `detail=fields-dropped`), so the create call can never add a label to the repo. Whether GitHub would create or reject an unknown label is not stated in the docs read |
 | Create | `issue_write` with `method: "create"`, `owner`, `repo`, `title`, `body`, `labels` (names), `assignees` (logins), `milestone` (number) - each only if on the card |
 | Comment on a duplicate | `add_issue_comment` with `owner`, `repo`, `issue_number`, `body` |
 | Issue key in state | `owner/repo#number` |
@@ -68,7 +69,7 @@ description.
 Per the [REST create-issue docs](https://docs.github.com/en/rest/issues/issues#create-an-issue) (read 24 Nov 2026),
 labels and assignees from a user without push access "are silently dropped". Compare the response's labels,
 assignees and milestone with the card. **Do not call `issue_write` again to fix a mismatch**; record it and report
-`detail=fields-dropped`. Give the filing identity push (Triage or Write) access so this does not happen.
+`detail=fields-dropped`. Give the filing identity the Write role (push access) on the target repositories so this does not happen.
 
 ## Public repositories
 

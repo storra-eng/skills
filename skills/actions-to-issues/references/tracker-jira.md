@@ -23,7 +23,8 @@ need them: the config holds the projects, components and issue types.
 
 `createJiraIssue`, `addOrEditJiraIssueComment`
 
-- `addOrEditJiraIssueComment` can also **edit** an existing comment. Show the arguments in the approval prompt.
+- `addOrEditJiraIssueComment` can also **edit** an existing comment. Show the arguments in the approval prompt, and
+  refuse a call that names an existing comment.
 - **Deny `executeWrite` and `executeDestructive` in both phases.** They run deferred write tools by name, so an
   allow- or deny-list of named tools does not cover what they can reach. Whether denying them closes every route is
   not stated in the docs.
@@ -60,7 +61,7 @@ jira:
 
 | Step | Call |
 |---|---|
-| Search (both phases) | `searchJiraIssuesUsingJql` with JQL pinned to the project, e.g. `project = ENG AND text ~ "<topic>" ORDER BY created DESC`, one page. Quote the topic as JQL text; never paste meeting text into JQL unescaped |
+| Search (both phases) | `searchJiraIssuesUsingJql` with JQL pinned to the project, e.g. `project in (ENG, OPS) AND text ~ "<topic>" ORDER BY created DESC` over **every** configured project, one page. Quote the topic as JQL text; never paste meeting text into JQL unescaped |
 | Create | `createJiraIssue` with the config's cloud id, project key, issue type, summary, description, and assignee account id, priority, labels and components only if on the card |
 | Comment on a duplicate | `addOrEditJiraIssueComment` on the existing key, new comment only |
 | Issue key in state | the key, e.g. `ENG-123` |
