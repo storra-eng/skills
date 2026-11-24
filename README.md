@@ -1,18 +1,28 @@
 # skills
 
-Agent skills from Storra. Currently one: **actions-to-issues**, which turns new **Granola** meeting notes into **Linear**
-issues, with **a human approval for every issue**.
+At [Storra](https://getstorra.com) we run a lot of agent skills internally. Most are tied to our own repos, tools and
+processes. The ones here are those we have chosen to make public: generic enough to be useful elsewhere, and written so
+they can be installed as-is.
 
-It is a skill (instructions plus one script), not a service. It runs in [OpenClaw](https://docs.openclaw.ai) and Claude
-Code, and follows the [Agent Skills](https://agentskills.io) layout.
+Each skill follows the [Agent Skills](https://agentskills.io) layout and is self-contained in its own folder under
+`skills/`.
+
+| Skill | What it does | Runs in |
+|---|---|---|
+| [Actions to Issues](#actions-to-issues) | Turns new meeting notes into tracker issues, with a human approval for every issue | [OpenClaw](https://docs.openclaw.ai), Claude Code |
 
 Contributing: see [CONTRIBUTING.md](CONTRIBUTING.md) (rules, tests, hooks, Tessl review and evals).
+
+## Actions to Issues
+
+`skills/actions-to-issues/` turns new **Granola** meeting notes into **Linear** issues, with **a human approval for
+every issue**. It is a skill (instructions plus one script), not a service.
 
 > **Read before installing.** It reads text other people wrote (transcripts) and can write to a shared tracker, so
 > prompt injection is the main risk. The skill states an approval rule; **it cannot enforce it.** Whether a human
 > approval really gates Linear writes depends on your host. See [Is the approval enforced?](#is-the-approval-enforced).
 
-## What it does
+### What it does
 
 - Finds meetings not yet handled, with a zero-token pre-check so an idle day costs almost nothing.
 - Filters to company business, then applies a **New-work test** (new, decided, durable): a standup usually yields no
@@ -35,7 +45,7 @@ flowchart TD
 Two phases with two tool sets is the core design: PROPOSE needs read-only access, and only FILE needs Linear write
 tools, started only after the host has recorded an approval.
 
-## Requirements
+### Requirements
 
 | Need | Detail |
 |---|---|
@@ -44,7 +54,7 @@ tools, started only after the host has recorded an approval.
 | Approvals | A chat surface for cards (built around Slack) and a way for a human to approve |
 | Python | 3.9+ for the pre-check, standard library only |
 
-## Install
+### Install
 
 | Host | How |
 |---|---|
@@ -53,7 +63,7 @@ tools, started only after the host has recorded an approval.
 
 Installing does **not** configure approvals.
 
-## Configure
+### Configure
 
 1. Copy [`assets/config.example.yaml`](skills/actions-to-issues/assets/config.example.yaml) somewhere private and fill it in: team,
    allowed projects, labels and people (with ids), company email domains, caps. The skill invents none of these.
@@ -67,7 +77,7 @@ Installing does **not** configure approvals.
 
 3. Run the [pre-check](docs/precheck.md) from your scheduler and start the agent unless it exits `0`.
 
-## Is the approval enforced?
+### Is the approval enforced?
 
 | Setup | Enforced? |
 |---|---|
@@ -80,7 +90,7 @@ Installing does **not** configure approvals.
 
 **Test it:** in the PROPOSE setup, ask the agent to create a Linear issue. If it can, you have no gate.
 
-## Threat model
+### Threat model
 
 - **Untrusted input.** Anyone quoted in a transcribed meeting can try to instruct the model. The skill treats meeting
   text as data; that is a mitigation, not a defence. Design so the worst case is a rejected card.
@@ -90,7 +100,7 @@ Installing does **not** configure approvals.
 
 Full version and hardening steps: [`docs/threat-model.md`](docs/threat-model.md).
 
-## Layout
+### Layout
 
 | Path | What |
 |---|---|
@@ -100,7 +110,7 @@ Full version and hardening steps: [`docs/threat-model.md`](docs/threat-model.md)
 | `docs/` | Threat model, pre-check, OpenClaw and Claude Code notes |
 | `tests/` | Unit and loopback tests, synthetic data only |
 
-## Related projects
+### Related projects
 
 Licences and activity as seen on GitHub on 18 November 2026; check before relying on them.
 
@@ -110,16 +120,19 @@ Licences and activity as seen on GitHub on 18 November 2026; check before relyin
 | [franzvill/action-sync](https://github.com/franzvill/action-sync) (MIT) | App: transcript to Jira tickets, with repo context | Jira, pasted transcripts; last pushed March 2026 |
 | [Granola MCP](https://docs.granola.ai/help-center/sharing/integrations/mcp) | The server this skill reads from | Not replaced by this skill |
 
+### Provenance
+
+- Derived from an internal meeting-triage assistant; only the generic policy and pre-check came across (no deployment
+  machinery, tracker data or real meeting content).
+- OpenClaw statements are from its public docs as read on 9 October 2026 ([`docs/openclaw.md`](docs/openclaw.md)); verify
+  them against your install.
+
 ## Acknowledgements
 
 - The [Agent Skills](https://agentskills.io) format ([spec](https://github.com/agentskills/agentskills), Apache-2.0).
 - [OpenClaw](https://docs.openclaw.ai) and ClawHub.
 - [Granola](https://www.granola.ai) and [Linear](https://linear.app). Not affiliated with or endorsed by either.
 
-## Licence and provenance
+## Licence
 
-- MIT, see [`LICENSE`](LICENSE).
-- Derived from an internal meeting-triage assistant; only the generic policy and pre-check came across (no deployment
-  machinery, tracker data or real meeting content).
-- OpenClaw statements are from its public docs as read on 9 October 2026 ([`docs/openclaw.md`](docs/openclaw.md)); verify
-  them against your install.
+MIT, see [`LICENSE`](LICENSE).
