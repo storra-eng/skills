@@ -13,14 +13,14 @@ Sources, read **24 November 2026**: [MCP configuration](https://docs.fireflies.a
 | MCP server | `https://api.fireflies.ai/mcp`, streamable HTTP only |
 | Auth | OAuth (default), or an API key as `Authorization: Bearer <key>` |
 | Meeting id | the transcript `id` (format not documented). This is the id in the state file and in card ids |
-| Meeting link | the transcript's `transcript_url`: put it on the card's *Source:* line, where FILE reads it (FILE has no Fireflies tools) |
-| Start time | `date`, epoch milliseconds (UTC); `duration` is in minutes |
+| Meeting link | the transcript's `transcript_url`: put it on the card's *Source:* line, where FILE reads it (FILE has no Fireflies tools). Accepted host: `fireflies.ai` or a subdomain (the docs give no example URL; inferred from the product's domain) |
+| Start time | `date`, "milliseconds from EPOCH" (UTC) per the schema; `duration` is in minutes |
 
 ## Tools
 
 | Use | Tool | Kind |
 |---|---|---|
-| Step 0 list | `fireflies_get_transcripts` (`fromDate`, `toDate` as `YYYY-MM-DD`; `limit` max 50; `skip`) | read |
+| Step 0 list | `fireflies_get_transcripts` (`fromDate` = yesterday, `toDate` = **tomorrow**, as `YYYY-MM-DD`, since the docs do not say whether `toDate` is inclusive; `limit` max 50; `skip`) | read |
 | Read the note | `fireflies_get_summary` (`transcriptId`) | read |
 | Transcript, only if the summary is too thin | `fireflies_get_transcript` (`transcriptId`) | read |
 | **Never** | `fireflies_share_meeting`, `fireflies_revoke_meeting_access`, `fireflies_update_meeting_title`, `fireflies_move_meeting`, `fireflies_create_soundbite`, `fireflies_create_upload_url`, `fireflies_confirm_upload`, `fireflies_create_meeting_from_transcript`, `fireflies_add_transcript_part` | write |
@@ -53,4 +53,6 @@ FIREFLIES_API_KEY=... python3 scripts/precheck.py --source fireflies
 One GraphQL `transcripts(fromDate, toDate, limit, skip) { id date }` call per page, with a long-lived API key
 (not the agent's OAuth session). Keep that key out of the agent's environment. Details in
 `scripts/source_fireflies.py`. API rate limits depend on plan ([limits](https://docs.fireflies.ai/fundamentals/limits)):
-Free is 500 calls a day, so a 5-minute schedule is about 290 calls.
+Free is 500 calls a day. A 5-minute schedule is about 290 calls when each tick is one page and the agent never wakes;
+paging (up to 20 calls a tick: two passes of 10) and agent runs on the same account add to that, so on Free use a
+15-minute schedule or longer.

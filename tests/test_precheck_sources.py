@@ -125,10 +125,23 @@ class Fireflies(Base):
 
     def test_a_full_page_is_followed_with_skip(self):
         first = [{"id": f"SyntheticFFp{i:03d}", "date": MS_9AM} for i in range(50)]
-        Fake.pages = [self.page(*first), self.page({"id": FF1, "date": MS_9AM})]
+        Fake.pages = [self.page(*first), self.page({"id": FF1, "date": MS_9AM})] * 2
         out, rc = self.check()
         self.assertTrue(out.startswith("OK seen=51 "))
-        self.assertEqual([r["body"]["variables"]["skip"] for r in Fake.requests], [0, 50])
+        self.assertEqual([r["body"]["variables"]["skip"] for r in Fake.requests], [0, 50, 0, 50])
+
+    def test_a_row_lost_between_pages_is_a_fail(self):
+        first = [{"id": f"SyntheticFFp{i:03d}", "date": MS_9AM} for i in range(50)]
+        # Pass 1 reads page 0 then page 1 after a deletion shifted a row out of reach; pass 2 sees the truth.
+        Fake.pages = [self.page(*first), self.page(), self.page(*first), self.page({"id": FF1, "date": MS_9AM})]
+        self.fails("page-shift (listing changed")
+
+    def test_two_consistent_passes_are_trusted(self):
+        first = [{"id": f"SyntheticFFp{i:03d}", "date": MS_9AM} for i in range(50)]
+        Fake.pages = [self.page(*first), self.page(), self.page(*first), self.page()]
+        out, rc = self.check()
+        self.assertTrue(out.startswith("OK seen=50 "))
+        self.assertEqual(len(Fake.requests), 4)
 
     def test_never_ending_pages_are_a_fail_not_idle(self):
         Fake.pages = [self.page(*[{"id": f"SyntheticFFq{i:04d}", "date": MS_9AM} for i in range(n, n + 50)])

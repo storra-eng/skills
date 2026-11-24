@@ -59,8 +59,8 @@ limits:                      # caps bound the damage of a manipulated run
   max_cards_per_run: 8
 
 issue:
-  # Link back to the meeting, used only when the note source returns no link of its own (Granola). Fireflies and
-  # Fathom links (transcript_url / share_url) ride on the card's Source line and win over this.
+  # Link back to the meeting: Granola only. Fireflies and Fathom links ride on the card's Source line instead
+  # (references/card-and-issue-format.md); this template is never used for them.
   link_template: "https://notes.granola.ai/d/{meeting_id}"
   # {approval_id} is supplied by the host with each approved card (the card id if the host has no approval id).
   attribution_template: "Filed by the meeting-notes assistant from {meeting_title}, {date}. Approval: {approval_id}."

@@ -20,8 +20,8 @@ python3 skills/actions-to-issues/scripts/precheck.py --source granola   # granol
 | `fathom` | REST `GET /meetings?created_after=...`, by cursor | `FATHOM_API_KEY` | `unknown` |
 
 Each `scripts/source_<name>.py` header has the endpoint, the variables and the docs it follows. Fireflies and Fathom
-use a long-lived API key rather than an OAuth session: give it to the scheduler only, never to the agent. More than 10
-pages in the window is a `FAIL`, never an idle day.
+use a long-lived API key rather than an OAuth session: give it to the scheduler only, never to the agent. More pages than the
+source's ceiling (Fireflies 10, Fathom 20) is a `FAIL`, never an idle day.
 
 | Exit | Meaning | Do |
 |---|---|---|

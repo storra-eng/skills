@@ -59,9 +59,15 @@ The rules below use Linear's field names; the adapter maps them (a GitHub reposi
 A created issue has:
 
 - a title that names the outcome, exactly as approved;
-- a description with the context, the specific ask, and a link back to the source meeting using the config's
-  the link on the card's *Source:* line when there is one (Fireflies `transcript_url`, Fathom `share_url`),
-  otherwise the config's `issue.link_template` (the meeting id comes from the approved card's id), as a markdown link `[<meeting title>, <date>](<url>)`. Meeting-note share links are often
+- a description with the context, the specific ask, and a link back to the source meeting, as a markdown link
+  `[<meeting title>, <date>](<url>)`. The URL is, by source:
+  - **Granola**: the config's `issue.link_template` with the meeting id from the approved card's id;
+  - **Fireflies, Fathom**: the link on the card's *Source:* line, used **only** if it is `https` on the source's own
+    host (`references/source-<source>.md`). Anything else, or no link on the card: no link. Never fall back to
+    `issue.link_template` for these sources: it builds a Granola URL.
+
+  The card was written by the run that read untrusted meeting text, so the host check is what stops a steered link
+  reaching the tracker. Meeting-note share links are often
   "anyone with the link can view", so the link is a convenience for whoever triages, not licence to paste more of the
   note than the justifying quote;
 - the attribution line from `issue.attribution_template`, last;

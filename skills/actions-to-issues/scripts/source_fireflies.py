@@ -3,9 +3,9 @@ query, read with an API key. No model, no MCP session.
 
 Docs read 2026-11-24: https://docs.fireflies.ai/graphql-api/query/transcripts (arguments `fromDate`,
 `toDate` as ISO 8601 DateTime, `limit` max 50, `skip`) and https://docs.fireflies.ai/getting-started/quickstart
-(endpoint and `Authorization: Bearer <key>`). The docs do not give the unit of the returned `date`
-field; it is read as epoch milliseconds when it is that large and seconds otherwise, and anything
-else is unknown (which the harness treats as old - fail open).
+(endpoint and `Authorization: Bearer <key>`). https://docs.fireflies.ai/schema/transcript gives `date` as
+"milliseconds from EPOCH"; a value too small for that is read as seconds, and anything else is unknown
+(which the harness treats as old - fail open).
 
 Credentials:
 
@@ -51,18 +51,11 @@ def _instant(v):
     return parse_iso(v) if isinstance(v, str) else None
 
 
-def fetch(creds, args, env, now, rows_mode):
-    key, url = creds
-    start, end = window(now, args.days)
-    iso = "%Y-%m-%dT%H:%M:%S.000Z"
-    headers = {"Content-Type": "application/json", "Accept": "application/json",
-               "Authorization": f"Bearer {key}", "User-Agent": "actions-to-issues-precheck/1.0"}
-    timeout = float(env.get("PRECHECK_HTTP_TIMEOUT", "15"))
-    rows, ids = [], set()
+def _read_all(url, headers, body_for, timeout):
+    """Every transcript in the window -> ([(id, date)], pages read). Raises Fail unless understood."""
+    items_out, ids = [], set()
     for page in range(MAX_PAGES):
-        body = {"query": QUERY, "variables": {"fromDate": start.strftime(iso), "toDate": end.strftime(iso),
-                                              "limit": PAGE, "skip": page * PAGE}}
-        doc = get_json(url, headers, timeout=timeout, method="POST", body=body)
+        doc = get_json(url, headers, timeout=timeout, method="POST", body=body_for(page))
         if not isinstance(doc, dict):
             raise Fail("reply-unexpected")
         if doc.get("errors"):
@@ -77,11 +70,31 @@ def fetch(creds, args, env, now, rows_mode):
             if not isinstance(mid, str) or not ID_RE.match(mid):
                 raise Fail("unparseable-meeting-id")
             if mid in ids:
-                # Offset paging over a list that changed between calls: a later page may also have
-                # skipped one. Not something to paper over.
                 raise Fail("page-shift (duplicate id across pages)")
             ids.add(mid)
-            rows.append((mid, minutes_since(_instant(it.get("date")), now), None, None))
+            items_out.append((mid, it.get("date")))
         if len(items) < PAGE:
-            return len(rows), None, rows
+            return items_out, page + 1
     raise Fail("too-many-pages")
+
+
+def fetch(creds, args, env, now, rows_mode):
+    key, url = creds
+    start, end = window(now, args.days)
+    iso = "%Y-%m-%dT%H:%M:%S.000Z"
+    headers = {"Content-Type": "application/json", "Accept": "application/json",
+               "Authorization": f"Bearer {key}", "User-Agent": "actions-to-issues-precheck/1.0"}
+    timeout = float(env.get("PRECHECK_HTTP_TIMEOUT", "15"))
+
+    def body_for(page):
+        return {"query": QUERY, "variables": {"fromDate": start.strftime(iso), "toDate": end.strftime(iso),
+                                              "limit": PAGE, "skip": page * PAGE}}
+    items, pages = _read_all(url, headers, body_for, timeout)
+    if pages > 1:
+        # Offset paging over a list that changed between calls can skip a row without repeating one (a
+        # deletion ahead of the offset). A second full pass that disagrees with the first is a doubt.
+        again, _ = _read_all(url, headers, body_for, timeout)
+        if [m for m, _d in again] != [m for m, _d in items]:
+            raise Fail("page-shift (listing changed between passes)")
+    rows = [(mid, minutes_since(_instant(d), now), None, None) for mid, d in items]
+    return len(rows), None, rows
