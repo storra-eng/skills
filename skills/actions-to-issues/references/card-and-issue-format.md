@@ -12,7 +12,7 @@ line breaks and blank lines between blocks:
 that would close it>
 
 *Card:* <card id>   (<meeting id>-<n>)
-*Source:* <meeting title>, <date>[, <meeting link, only when the note source returned one>]
+*Source:* <meeting title>, <date>[, <meeting link, only when the note source returned one and `issue.source_links` is not false>]
 *Quote:* "<the line from the notes that justifies this>"
 *Existing search:* <what you searched for and what you found, or "no match">
 
@@ -69,8 +69,8 @@ A created issue has:
     no link. Never fall back to
     `issue.link_template` for these sources: it builds a Granola URL.
 
-  The card was written by the run that read untrusted meeting text, so the host check is what stops a steered link
-  reaching the tracker. Meeting-note share links are often
+  The card was written by the run that read untrusted meeting text. The approver seeing the link on the card is the
+  control; the host check is a prompt rule that backs it up. Meeting-note share links are often
   "anyone with the link can view", so the link is a convenience for whoever triages, not licence to paste more of the
   note than the justifying quote;
 - the attribution line from `issue.attribution_template`, last;

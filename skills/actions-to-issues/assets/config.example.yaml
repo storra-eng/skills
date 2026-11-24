@@ -3,6 +3,8 @@
 
 source: granola             # granola | fireflies | fathom; absent means granola. Instructions: references/source-<source>.md
                             # (the pre-check needs the same value: --source or MN2L_SOURCE)
+# fathom:                   # only with source: fathom - its MCP tool names are undocumented (references/source-fathom.md)
+#   tools: {list: "...", summary: "...", transcript: "..."}
 tracker: linear             # linear | jira | github; absent means linear. Instructions: references/tracker-<tracker>.md
 
 linear:

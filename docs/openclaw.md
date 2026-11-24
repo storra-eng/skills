@@ -68,7 +68,10 @@ namespace as unconfirmed**: the MCP page does not describe either.
                                               "list_issue_labels", "list_users", "list_teams"] } },
       linear_write: { url: "https://mcp.linear.app/mcp", transport: "streamable-http", auth: "oauth",
                       toolFilter: { include: ["save_issue", "save_comment"] } },
-      granola:      { url: "https://mcp.granola.ai/mcp", transport: "streamable-http", auth: "oauth" },
+      granola:      { url: "https://mcp.granola.ai/mcp", transport: "streamable-http", auth: "oauth",
+                      // read tools only (references/source-granola.md); another source: its read tools
+                      toolFilter: { include: ["list_meetings", "search_meetings", "get_meetings",
+                                              "get_meeting_transcript"] } },
     },
   },
   agents: {

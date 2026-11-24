@@ -13,7 +13,7 @@ Sources, read **24 November 2026**: [MCP configuration](https://docs.fireflies.a
 | MCP server | `https://api.fireflies.ai/mcp`, streamable HTTP only |
 | Auth | OAuth (default), or an API key as `Authorization: Bearer <key>` |
 | Meeting id | the transcript `id` (format not documented). This is the id in the state file and in card ids |
-| Meeting link | the transcript's `transcript_url`: put it on the card's *Source:* line, where FILE reads it (FILE has no Fireflies tools). Host: `fireflies.ai` (the docs give no example URL; inferred from the product's domain) |
+| Meeting link | the transcript's `transcript_url` (a schema field; unconfirmed that the MCP tools return it): put it on the card's *Source:* line, where FILE reads it (FILE has no Fireflies tools). Host: `fireflies.ai` (the docs give no example URL; inferred from the product's domain) |
 | Start time | `date`, "milliseconds from EPOCH" (UTC) per the schema; `duration` is in minutes |
 
 ## Tools

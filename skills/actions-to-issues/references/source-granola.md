@@ -27,7 +27,9 @@ Source: [Granola MCP docs](https://docs.granola.ai/help-center/sharing/integrati
   `get_meetings` instead. Use whichever is present. With `search_meetings`, page through `next_cursor`; it groups
   the captures of one event under one id, so count each distinct id once across the listed ids and every
   `other_ids` entry of `duplicate_recordings`, and record those ids in the meeting's `ids` in the state file. `seen`
-  can still differ from the pre-check's count. Otherwise the pre-check, which lists every capture,
+  can still differ from the pre-check's count. Ignore its `upcoming_meetings` block and any `evt_` id: a range that
+  reaches past now also returns calendar events that have not happened (per the tool's own description, served by the
+  server; not in the docs). Unconfirmed: that it returns `captured_by_me` and the same ids as `list_meetings`. Otherwise the pre-check, which lists every capture,
   finds the sibling and wakes the agent on every tick.
 - The docs list no parameters for any tool. The `list_meetings` arguments above are what the pre-check sends and the
   server accepted when last run; they are not in the docs.

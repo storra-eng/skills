@@ -76,7 +76,7 @@ file for the configured tracker or source does not exist, stop with `status=erro
    |---|---|---|
    | `granola` (default) | `list_meetings` with `time_range: "custom"`, or `search_meetings` with `from_date`/`to_date` where it is hidden (count its `other_ids` too) | `captured_by_me="false"` |
    | `fireflies` | `fireflies_get_transcripts` with `fromDate` yesterday, `toDate` tomorrow, paged by `skip` | `unknown` |
-   | `fathom` | the server's list-meetings tool, from yesterday's midnight | `unknown` |
+   | `fathom` | `fathom.tools.list` from the config (names undocumented; unset: stop, `detail=fathom-tools-unconfigured`) | `unknown` |
 
    Count, before filtering: `seen` (all returned) and `others`. Report both honestly, including `seen=0`; never write a
    count you did not read - zero means either a quiet day or an account that could not see the meetings, and only

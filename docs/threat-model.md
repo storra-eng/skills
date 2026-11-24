@@ -61,8 +61,8 @@ exists without an approved card. On platforms without that, approximate it with 
 - Prompt-level rules fail some of the time; model choice lowers the rate but does not remove it.
 - The note-source and tracker sessions are as powerful as the accounts behind them. Use the least-privileged accounts
   you can.
-- A meeting link on a card comes from the run that read untrusted text. The filing run accepts it only on the note
-  source's own host (`references/card-and-issue-format.md`).
+- For Fireflies and Fathom the meeting link on a card comes from the run that read untrusted text. The approver
+  sees it on the card; the filing run's host check (`references/card-and-issue-format.md`) is only a prompt rule.
 - A note-source API key (Fireflies, Fathom pre-check) does not expire on its own and reads every meeting its owner
   can see. Keep it with the scheduler, out of the agent's environment, and rotate it if that host is compromised.
 - Platform behaviour described in [`openclaw.md`](openclaw.md) is from public documentation and unverified on a live
