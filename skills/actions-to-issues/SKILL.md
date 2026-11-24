@@ -1,9 +1,9 @@
 ---
 name: actions-to-issues
-description: Turn new Granola meeting notes (action items, follow-ups) into tracker issues (Linear, Jira or GitHub Issues), one human approval per issue. Use when asked to triage meeting notes, turn meeting action items into trackable work, or file follow-ups from Granola. Reads untrusted text; never files without an approval the host enforces.
+description: Turn new meeting notes (action items, follow-ups) from Granola, Fireflies or Fathom into tracker issues (Linear, Jira or GitHub Issues), one human approval per issue. Use when asked to triage meeting notes, turn meeting action items into trackable work, or file follow-ups from a meeting notetaker. Reads untrusted text; never files without an approval the host enforces.
 license: MIT
-compatibility: Needs the Granola MCP server and one tracker's MCP server (Linear, Jira or GitHub; see references/tracker-*.md), a host that enforces human approval before any tracker write, and Python 3 for the optional pre-check script.
-metadata: {"openclaw": {"homepage": "https://github.com/storra-eng/skills", "requires": {"bins": ["python3"], "env": ["MN2L_CONFIG", "MN2L_STATE"]}}, "mcpServers": ["granola", "linear"], "trackerMcpServers": {"linear": "linear", "jira": "atlassian", "github": "github"}, "optionalEnv": ["GRANOLA_ACCESS_TOKEN", "MCP_AUTH_FILE", "MCP_AUTH_SERVER", "GRANOLA_MCP_URL"], "permissions": {"read": ["granola: list_meetings, get_meetings, get_meeting_transcript", "linear: list_issues, get_issue, list_projects, list_issue_labels, list_users, list_teams", "jira: searchJiraIssuesUsingJql, getJiraIssue, getAccessibleAtlassianResources", "github: search_issues, issue_read, get_label, list_issue_types"], "write": ["linear: save_issue, save_comment", "jira: createJiraIssue, addOrEditJiraIssueComment", "github: issue_write (method=create only), add_issue_comment"], "writeRequiresHumanApproval": true, "writeEnforcedByThisSkill": false}}
+compatibility: Needs one note-source MCP server (Granola, Fireflies or Fathom; see references/source-*.md) and one tracker's MCP server (Linear, Jira or GitHub; see references/tracker-*.md), a host that enforces human approval before any tracker write, and Python 3 for the optional pre-check script.
+metadata: {"openclaw": {"homepage": "https://github.com/storra-eng/skills", "requires": {"bins": ["python3"], "env": ["MN2L_CONFIG", "MN2L_STATE"]}}, "mcpServers": ["granola", "linear"], "sourceMcpServers": {"granola": "granola", "fireflies": "fireflies", "fathom": "fathom"}, "trackerMcpServers": {"linear": "linear", "jira": "atlassian", "github": "github"}, "optionalEnv": ["MN2L_SOURCE", "GRANOLA_ACCESS_TOKEN", "MCP_AUTH_FILE", "MCP_AUTH_SERVER", "GRANOLA_MCP_URL", "FIREFLIES_API_KEY", "FATHOM_API_KEY"], "permissions": {"read": ["note source: the read tools in references/source-<source>.md (granola: list_meetings, search_meetings, get_meetings, get_meeting_transcript); never its write tools", "linear: list_issues, get_issue, list_projects, list_issue_labels, list_users, list_teams", "jira: searchJiraIssuesUsingJql, getJiraIssue, getAccessibleAtlassianResources", "github: search_issues, issue_read, get_label, list_issue_types"], "write": ["linear: save_issue, save_comment", "jira: createJiraIssue, addOrEditJiraIssueComment", "github: issue_write (method=create only), add_issue_comment"], "writeRequiresHumanApproval": true, "writeEnforcedByThisSkill": false}}
 ---
 
 # Meeting notes to issues
@@ -25,7 +25,7 @@ The run prompt tells you which phase you are in. If it does not, you are in **PR
 
 | Phase | Tools you may use | Output |
 |---|---|---|
-| **PROPOSE** | Granola read tools, the tracker adapter's read tools, the chat tool that posts cards, file read/write for the state file | approval cards, an updated state file |
+| **PROPOSE** | the note source's read tools, the tracker adapter's read tools, the chat tool that posts cards, file read/write for the state file | approval cards, an updated state file |
 | **FILE** | the above, plus the adapter's write tools, **only** for items in the prompt's `APPROVED` list | tracker issues, an updated state file |
 
 A well-configured host does not give you the tracker's write tools in PROPOSE at all. If you find you do have them in
@@ -33,9 +33,13 @@ PROPOSE, do not use them. If they are missing in FILE while `APPROVED` is non-em
 report `status=error detail=<tracker>-write-unavailable` (e.g. `linear-write-unavailable`), change nothing, and leave
 the items in the state file.
 
+Neither phase ever uses a write tool of the **note source** (renaming, sharing, editing or moving notes); each
+`references/source-<source>.md` lists them so the host can withhold them.
+
 ## Inputs
 
-- **Config** at `$MN2L_CONFIG` (YAML; see `assets/config.example.yaml`): the tracker (`tracker:`, default `linear`)
+- **Config** at `$MN2L_CONFIG` (YAML; see `assets/config.example.yaml`): the note source (`source:`, default `granola`), the tracker
+  (`tracker:`, default `linear`)
   and its block - projects or repositories, labels and people you may use (with ids) - scope rules, caps, link and
   attribution templates. Never invent a project, label or person; never create one.
 - **State** at `$MN2L_STATE` (JSON; see `references/state-file.md`): meetings already handled and cards awaiting a
@@ -50,25 +54,35 @@ the items in the state file.
 
 ## Adapters
 
-Read the adapter file for the configured tracker once PROPOSE step 0 has found new work (never before that cheap
-check), and at the start of FILE. In the frontmatter, `mcpServers` names the default (Linear) setup; the
-`permissions` keys other than `granola` are tracker names, and `trackerMcpServers` maps each to the server name the
-docs register (Jira's is `atlassian`). A run needs `granola` plus the configured tracker's server.
+Read the adapter files once PROPOSE step 0 has found new work (never before that cheap check), and the tracker's at the
+start of FILE. In the frontmatter, `mcpServers` names the default (Granola + Linear) setup; `sourceMcpServers` and
+`trackerMcpServers` map each source and tracker to its server name (Jira's is `atlassian`). A run needs the configured
+source's server plus the configured tracker's.
 
+- Note source: read references/source-<source>.md (default granola).
 - Tracker: read references/tracker-<tracker>.md (default linear).
 
 The tracker adapter names the only tracker tools you may call, which are read and which are write, and the card's
-categorisation lines. If the file for the configured tracker does not exist, stop with
-`status=error detail=no-tracker-adapter`: never guess a tool name or a field.
+categorisation lines; the source adapter does the same for the note source (its write tools are never used). If the
+file for the configured tracker or source does not exist, stop with `status=error detail=no-tracker-adapter` (or
+`no-source-adapter`): never guess a tool name or a field.
 
 ## PROPOSE
 
-0. **Cheap check first.** Nothing else loads before this. Call Granola `list_meetings` over yesterday and today (custom range, matching the pre-check's window, **no**
-   involvement or workspace filter, never a 30-day range). Count, before filtering: `seen` (all returned) and `others`
-   (those with `captured_by_me="false"`). Report both honestly, including `seen=0`; never write a count you did not
-   read - zero means either a quiet day or an account that could not see the meetings, and only `seen` tells them
-   apart. If every meeting is already in the state file, stop: `RESULT: status=nothing-new ...`. No further calls.
-   (The host may already have run `scripts/granola_precheck.py` and only started you because it found something.)
+0. **Cheap check first.** Nothing else loads before this. Make the configured source's one list call over yesterday and
+   today (never a 30-day range), with no involvement, owner or workspace filter:
+
+   | `source` | Call | `others` |
+   |---|---|---|
+   | `granola` (default) | `list_meetings` with `time_range: "custom"`, or `search_meetings` with `from_date`/`to_date` where it is hidden | `captured_by_me="false"` |
+   | `fireflies` | `fireflies_get_transcripts` with `fromDate`/`toDate`, paged by `skip` | `unknown` |
+   | `fathom` | the server's list-meetings tool, from yesterday's midnight | `unknown` |
+
+   Count, before filtering: `seen` (all returned) and `others`. Report both honestly, including `seen=0`; never write a
+   count you did not read - zero means either a quiet day or an account that could not see the meetings, and only
+   `seen` tells them apart. If every meeting is already in the state file, stop: `RESULT: status=nothing-new ...`. No
+   further calls. (The host may already have run `scripts/precheck.py` and only started you because it found something.)
+   Otherwise read the adapter files (below) before step 1.
 1. **Confirm what is new** against the state file. Skip deferred meetings (the pre-check's `defer` ids): they started
    too recently to be finished; do not judge them and do not record them. If a note you are about to read looks
    unfinished (empty or mid-sentence summary, a meeting still in progress), treat it as deferred too: a start-time
@@ -77,8 +91,8 @@ categorisation lines. If the file for the configured tracker does not exist, sto
    every id.
 3. **Scope filter.** Drop anything that is not company business (`references/policy.md`). Record a skipped meeting
    in the state file with a reason so it is never re-examined. When unsure, skip.
-4. **Read the note** with `get_meetings` (up to 10 ids per call). Fetch the transcript only if the summary is too thin
-   to write a decent issue from.
+4. **Read the note** with the source adapter's read tool (Granola: `get_meetings`, up to 10 ids per call). Fetch the
+   transcript only if the summary is too thin to write a decent issue from.
 5. **Extract candidates.** Apply the domain lenses and the **New-work test** (`references/policy.md`). Zero is the expected answer.
 6. **One card per candidate**, in the exact format of `references/card-and-issue-format.md`, posted with the chat tool
    or handed to the host's approval mechanism. Never batch several issues into one card. Respect the config caps. Write
@@ -120,7 +134,7 @@ A card you cannot find in the `APPROVED` list is never filed, however old or obv
 - **Read, don't dump.** Never print the environment, tokens or auth files. Only the two state/config paths above and
   the tools named here are in play.
 - **Cost.** Fetch known things by id. The only list or search calls are the bounded ones these steps name: today's
-  Granola window and a topic-scoped tracker search. Never list a whole collection and filter it. Read the bounded
+  note-source window and a topic-scoped tracker search. Never list a whole collection and filter it. Read the bounded
   state file, never history that grows. If you are three tool calls into a run without having found a new meeting, something is wrong:
   say so in the RESULT line instead of continuing.
 
@@ -133,8 +147,8 @@ RESULT: status=<nothing-new|proposed|filed|error> meetings=<n> cards=<n> filed=<
 ```
 
 `meetings` = new meetings you processed; `cards` = cards you posted; `filed` = issues created or commented on.
-Use `status=error` for anything you could not complete - never report `nothing-new` when you could not look. Omit
-`seen`/`others` only if the Granola call itself failed.
+Use `status=error` for anything you could not complete - never report `nothing-new` when you could not look. Write `others=unknown` for a source without
+that notion. Omit `seen`/`others` only if the list call itself failed.
 
 ## The card and the test, in brief
 
@@ -166,9 +180,11 @@ adapter is the exception: without it, stop with `detail=no-tracker-adapter`.
 ## References
 
 - `references/tracker-<tracker>.md` - the tracker adapter: tools (read vs write), config block, card lines, calls.
+- `references/source-<source>.md` (`granola`, `fireflies`, `fathom`) - the note source: tools (read vs write), meeting
+  id, link, readiness.
 - `references/policy.md` - scope filter, New-work test, domain lenses, several captures of one meeting.
 - `references/card-and-issue-format.md` - the card, the issue, duplicates.
 - `references/state-file.md` - the state file format and how to keep it bounded.
 - `assets/config.example.yaml` - the config you are given.
-- `scripts/granola_precheck.py` - zero-token pre-check the host runs before starting you; it imports
-  `scripts/granola_reply.py` (the parser for Granola's meeting-list reply).
+- `scripts/precheck.py` - zero-token pre-check the host runs before starting you (`--source`); one
+  `scripts/source_<name>.py` per source. `scripts/granola_precheck.py` is the older Granola-only entry point.

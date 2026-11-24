@@ -1,6 +1,6 @@
 {
   "name": "storra/actions-to-issues",
-  "description": "Turn new Granola meeting notes into tracker issues (Linear, Jira or GitHub Issues), one human approval per issue. Use to triage meeting notes into trackable work. Reads untrusted text; never files without an approval the host enforces.",
+  "description": "Turn new meeting notes from Granola, Fireflies or Fathom into tracker issues (Linear, Jira or GitHub Issues), one human approval per issue. Use to triage meeting notes into trackable work. Reads untrusted text; never files without an approval the host enforces.",
   "private": true,
   "skills": ["."],
   "version": "0.1.0"

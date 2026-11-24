@@ -4,7 +4,12 @@ folder stays self-contained). Pure functions: no network, no files, no token han
 Everything here fails closed: a reply that is not positively understood raises Fail, which the
 caller must treat as a doubt (wake the agent), never as an idle day."""
 import datetime as dt
+import os
 import re
+import sys
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from precheck_lib import Fail, parse_iso  # noqa: E402,F401  (re-exported)
 
 MEETING_TAG_RE = re.compile(r'<meeting\b((?:[^>"]|"[^"]*")*)>', re.S)
 ATTR_RE = re.compile(r'([\w:.-]+)\s*=\s*"([^"]*)"')
@@ -23,10 +28,6 @@ MONTHS = {m: i for i, m in enumerate(
 DATE_RE = re.compile(
     r"(\w{3})\w*\s+(\d{1,2}),\s+(\d{4})\s+(\d{1,2}):(\d{2})\s*([AP])M"
     r"(?:\s*(?:GMT|UTC)(?:([+-])(\d{1,2})(?::?(\d{2}))?)?)?", re.I)
-
-
-class Fail(Exception):
-    pass
 
 
 def parse_instant(human):
@@ -51,21 +52,6 @@ def parse_instant(human):
     try:
         return dt.datetime(int(year), mon, int(day), hour, int(minute),
                            tzinfo=dt.timezone(-offset if sign == "-" else offset))
-    except ValueError:
-        return None
-
-
-def parse_iso(v):
-    """ISO-8601 with an offset -> aware datetime, or None. The fraction is normalised to six digits
-    first: fromisoformat before Python 3.11 accepts only 3 or 6, and a host python that rejected the
-    server's precision would make every derived value unknown, silently."""
-    m = re.match(r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d+))?(Z|[+-]\d{2}:?\d{2})$", v or "")
-    if not m:
-        return None
-    base, frac, tz = m.groups()
-    tz = "+00:00" if tz == "Z" else (tz if ":" in tz else tz[:3] + ":" + tz[3:])
-    try:
-        return dt.datetime.fromisoformat(base + "." + ((frac or "0") + "000000")[:6] + tz)
     except ValueError:
         return None
 

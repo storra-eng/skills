@@ -1,6 +1,8 @@
 # Copy to a private location, fill in, and point MN2L_CONFIG at it. Never commit your real copy.
 # Everything here is yours to supply: the skill hardcodes no team, project, label or person.
 
+source: granola             # granola | fireflies | fathom; absent means granola. Instructions: references/source-<source>.md
+                            # (the pre-check needs the same value: --source or MN2L_SOURCE)
 tracker: linear             # linear | jira | github; absent means linear. Instructions: references/tracker-<tracker>.md
 
 linear:
@@ -50,13 +52,15 @@ scope:
     - legal-personal
     - family
     - recruitment-of-a-named-individual
-  skip_workspace_hidden: true   # skip is_workspace_visible="false" unless unmistakably company work
+  skip_workspace_hidden: true   # Granola only: skip is_workspace_visible="false" unless unmistakably company work
 
 limits:                      # caps bound the damage of a manipulated run
   max_cards_per_meeting: 3
   max_cards_per_run: 8
 
 issue:
+  # Link back to the meeting; the format depends on the source. Fireflies and Fathom return a link with each
+  # meeting (transcript_url / share_url), used when this is unset (references/source-<name>.md).
   link_template: "https://notes.granola.ai/d/{meeting_id}"
   # {approval_id} is supplied by the host with each approved card (the card id if the host has no approval id).
   attribution_template: "Filed by the meeting-notes assistant from {meeting_title}, {date}. Approval: {approval_id}."

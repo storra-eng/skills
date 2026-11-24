@@ -10,7 +10,7 @@ mkdir -p .claude/skills && cp -R skills/actions-to-issues .claude/skills/     # 
 Add the MCP servers (names are yours to choose; the permission rules below use them):
 
 ```bash
-claude mcp add --transport http granola https://mcp.granola.ai/mcp
+claude mcp add --transport http granola https://mcp.granola.ai/mcp      # or your note source: references/source-<name>.md
 claude mcp add --transport http linear  https://mcp.linear.app/mcp
 ```
 
@@ -53,7 +53,8 @@ name, deny the Linear write surface:
 {
   "permissions": {
     "allow": [
-      "mcp__granola__list_meetings", "mcp__granola__get_meetings", "mcp__granola__get_meeting_transcript",
+      "mcp__granola__list_meetings", "mcp__granola__search_meetings", "mcp__granola__get_meetings",
+      "mcp__granola__get_meeting_transcript",
       "mcp__linear__list_issues", "mcp__linear__get_issue", "mcp__linear__list_projects",
       "mcp__linear__list_issue_labels", "mcp__linear__list_users", "mcp__linear__list_teams",
       "Read(//path/to/config.yaml)", "Read(//path/to/state.json)", "Edit(//path/to/state.json)"
@@ -115,13 +116,14 @@ the adapter's two write tools, and give the filing identity access to the issue 
 
 ## Scheduling
 
-Run `scripts/granola_precheck.py` from cron or launchd first.
+Run `scripts/precheck.py --source <your source>` from cron or launchd first (`scripts/granola_precheck.py` still works
+for Granola).
 
 1. **Exit 0**: stop. **Anything else**: start the agent. The pre-check fails open by design.
 2. **Pass its output into the prompt.** The `new <id>` and `defer <id>` lines are how the agent learns which meetings
-   to leave alone for now; without them it re-lists Granola and may judge a half-finished meeting.
+   to leave alone for now; without them it re-lists the note source and may judge a half-finished meeting.
    ```bash
-   out=$(python3 skills/actions-to-issues/scripts/granola_precheck.py); rc=$?
+   out=$(python3 skills/actions-to-issues/scripts/precheck.py --source granola); rc=$?
    [ "$rc" -eq 0 ] && exit 0
    claude -p --settings proposer.settings.json --permission-prompts none \
      "Run the actions-to-issues PROPOSE phase. Pre-check output:

@@ -48,9 +48,9 @@ Enforcement comes from the platform's tool visibility and sender allowlists, not
     `list_users`, `list_teams`.
   - `linear_write`: `toolFilter.include` = `save_issue`, `save_comment`. Nothing else.
 - **Two agents**, both with `skills: ["actions-to-issues"]`:
-  - `meeting-proposer`: Granola read tools, `linear_read`, the Slack message tool. **No `linear_write`.** Runs on the
+  - `meeting-proposer`: the note source's read tools (never its write tools; `references/source-<name>.md`), `linear_read`, the Slack message tool. **No `linear_write`.** Runs on the
     schedule (after the pre-check). This is the only agent that ever reads transcripts.
-  - `meeting-filer`: `linear_read` and `linear_write`, no Granola. Reachable **only** from the approvers' Slack
+  - `meeting-filer`: `linear_read` and `linear_write`, no note source. Reachable **only** from the approvers' Slack
     identities (channel allowlist / DM pairing). It files what an approver tells it to file, using the approved card
     text from the Slack thread the approver replied in (or from your approval store), never from the state file alone.
 - **Never give the proposer a way to talk to the filer.** `tools.agentToAgent` is on by default per the prompt-injection
@@ -117,7 +117,7 @@ tap-to-confirm.
 
 ### Scheduling and the pre-check
 
-Use OpenClaw's scheduler (or any external one) to run `scripts/granola_precheck.py` first and start the proposer only on
+Use OpenClaw's scheduler (or any external one) to run `scripts/precheck.py --source <your source>` first and start the proposer only on
 exit status other than `0`. The docs I read do not describe a conditional-run mechanism; wrapping the agent start in a
 shell script is the portable way, and that wrapper should (a) pass the pre-check's `new` / `defer` lines into the
 agent's prompt, (b) take a lock so PROPOSE and FILE never overlap on the state file, and (c) count consecutive

@@ -9,7 +9,7 @@ and what reduces it. It deliberately contains no exploit detail.
 |---|---|
 | The tracker (Linear, Jira or GitHub) | Issues are durable, widely readable (world-readable in a public GitHub repository) and drive other people's work. Junk or malicious issues cost trust and triage time. |
 | Meeting content | Transcripts hold other people's words, sometimes personal or commercially sensitive. |
-| Credentials | Granola and tracker OAuth sessions or tokens; the chat bot token. |
+| Credentials | The note source's session (Granola: OAuth) and the tracker's OAuth sessions or tokens; the chat bot token; for Fireflies or Fathom, the pre-check's long-lived API key. |
 | The approver's attention | A reviewer who learns to click approve is no gate at all. |
 
 ## Who can attack, and how
@@ -61,6 +61,8 @@ exists without an approved card. On platforms without that, approximate it with 
 - Prompt-level rules fail some of the time; model choice lowers the rate but does not remove it.
 - The Granola and tracker sessions are as powerful as the accounts behind them. Use the least-privileged accounts
   you can.
+- A note-source API key (Fireflies, Fathom pre-check) does not expire on its own and reads every meeting its owner
+  can see. Keep it with the scheduler, out of the agent's environment, and rotate it if that host is compromised.
 - Platform behaviour described in [`openclaw.md`](openclaw.md) is from public documentation and unverified on a live
   install.
 
