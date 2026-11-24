@@ -31,8 +31,8 @@ a milestone and has no priority line.
   not "Discuss outreach limits").
 - The quote is verbatim from the notes. It is what lets a reviewer decide without opening anything.
 - The search line proves you did step 1 of the New-work test. A card without it should be rejected.
-- The categorisation lines are how the reviewer approves the issue's **categorisation** along with the item. Fill them from
-  the config when you write the card, not later. If the reviewer disagrees with a project they reject the card.
+- The categorisation lines are how the reviewer approves the issue's **categorisation** along with the item. Fill them
+  from the config when you write the card, not later. If the reviewer disagrees with a project they reject the card.
 - Each card is self-contained: title, description, meeting, date and justifying quote. "See the meeting notes" is not
   a proposal.
 - Card ids: the **full** meeting id, a hyphen, and `n` counting from 1 within the meeting (`<meeting id>-<n>`).
@@ -45,13 +45,14 @@ a milestone and has no priority line.
 The rules below use Linear's field names; the adapter maps them (a GitHub repository is the "project").
 
 - **Project: always.** Pick from the config by the surface the work lands in. If nothing fits well, propose the
-  closest and say "best fit"; never create a project. Pass it **by id**.
+  closest and say "best fit"; never create a project. Pass it in the form the adapter's "Calls" table gives (Linear
+  id, Jira key, GitHub owner/name).
 - **Labels: at least one**, from the config only, unless the adapter's card line allows `none` (Jira). Never create
   a label.
 - **Priority: only when the meeting gave a reason** - a date, "urgent", "blocker", "this week". Otherwise `none`.
   Never default to Medium. A tracker without priority (GitHub) gets the reason in the description instead.
-- **Assignee: only someone the meeting named as doing it**, by id (or login) from the config. Otherwise `none`. Never "me":
-  the tracker session may belong to whoever authorised the integration, not the person the meeting meant.
+- **Assignee: only someone the meeting named as doing it**, by id (or login) from the config. Otherwise `none`. Never
+  "me": the tracker session may belong to whoever authorised the integration, not the person the meeting meant.
 
 ## Writing the issue (FILE phase)
 

@@ -2,8 +2,8 @@
 
 Storra's open-source agent skills. The first, `actions-to-issues`, is a standalone skill that turns new Granola meeting
 notes into tracker issues (Linear, Jira or GitHub Issues), one human approval per issue. It ships policy (the skill), a
-zero-token pre-check script and tests. It does **not** ship an approval mechanism, a scheduler or a chat bridge - those belong to the host platform, and
-the README is explicit about what that means for security.
+zero-token pre-check script and tests. It does **not** ship an approval mechanism, a scheduler or a chat bridge - those
+belong to the host platform, and the README is explicit about what that means for security.
 
 ## Agent instructions
 

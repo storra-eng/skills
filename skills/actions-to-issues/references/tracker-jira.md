@@ -61,7 +61,7 @@ jira:
 
 | Step | Call |
 |---|---|
-| Search (both phases) | `searchJiraIssuesUsingJql` with JQL pinned to the project, e.g. `project in (ENG, OPS) AND text ~ "<topic>" ORDER BY created DESC` over **every** configured project, one page. Quote the topic as JQL text; never paste meeting text into JQL unescaped |
+| Search (both phases) | `searchJiraIssuesUsingJql` with JQL pinned to the project, `project in (<every configured key>) AND text ~ "<topic>" ORDER BY created DESC`, one page. Build `<topic>` from your own words; inside the quotes, escape `\` as `\\` and `"` as `\"`, and never paste meeting text into JQL |
 | Create | `createJiraIssue` with the config's cloud id, project key, issue type, summary, description, and assignee account id, priority, labels and components only if on the card |
 | Comment on a duplicate | `addOrEditJiraIssueComment` on the existing key, new comment only |
 | Issue key in state | the key, e.g. `ENG-123` |

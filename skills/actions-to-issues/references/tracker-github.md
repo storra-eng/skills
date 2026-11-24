@@ -59,7 +59,7 @@ description.
 | Step | Call |
 |---|---|
 | Search (both phases) | One `search_issues` per configured repo, with `owner` and `repo` **always set** (unpinned, it searches all of GitHub) and `query` = the topic with any `word:` qualifier (`repo:`, `org:`, `is:`) removed. Ignore pull requests in the results |
-| Check labels | `get_label` for each card label in the card's repo, before creating. A label that is missing is left off (record and report `detail=fields-dropped`), so the create call can never add a label to the repo. Whether GitHub would create or reject an unknown label is not stated in the docs read |
+| Check labels | `get_label` for each card label in the card's repo: in PROPOSE before posting the card (a missing label is left off the card), and again in FILE before creating. A label that is missing is left off (record and report `detail=fields-dropped`), so the create call can never add a label to the repo. Whether GitHub would create or reject an unknown label is not stated in the docs read |
 | Create | `issue_write` with `method: "create"`, `owner`, `repo`, `title`, `body`, `labels` (names), `assignees` (logins), `milestone` (number) - each only if on the card |
 | Comment on a duplicate | `add_issue_comment` with `owner`, `repo`, `issue_number`, `body` |
 | Issue key in state | `owner/repo#number` |

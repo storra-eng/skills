@@ -106,7 +106,12 @@ Same two files, with the tool names from the adapter's "Read tools" and "Write t
 | Tracker | PROPOSE | FILE |
 |---|---|---|
 | Jira (`atlassian`) | allow the three read tools; **deny `createJiraIssue`, `addOrEditJiraIssueComment`, `editJiraIssue`, `transitionJiraIssue`, `executeWrite` and `executeDestructive`** (the last two run deferred write tools); Jira has no read-only endpoint to fall back on | `ask` for `createJiraIssue` and `addOrEditJiraIssueComment` (refuse one that edits an existing comment); keep the `execute*`, edit and transition denies |
-| GitHub (`github`) | point a second server entry at `https://api.githubcopilot.com/mcp/x/issues/readonly`, so no write tool exists in the run | `ask` for `issue_write` and `add_issue_comment`; `issue_write` also updates and closes issues, so read its `method` in every prompt (or refuse anything but `create` in a `PreToolUse` hook) |
+| GitHub (`github`) | allow the four read tools; **deny `issue_write`, `add_issue_comment`, `sub_issue_write` and `update_issue_comment`**. For a run with no write tool at all, load only a server pointed at `https://api.githubcopilot.com/mcp/x/issues/readonly` (e.g. `--strict-mcp-config --mcp-config <file>`) | `ask` for `issue_write` and `add_issue_comment`; `issue_write` also updates and closes issues, so read its `method` in every prompt (or refuse anything but `create` in a `PreToolUse` hook); keep `sub_issue_write` and `update_issue_comment` denied |
+
+The allow list is the real gate, as for Linear: run PROPOSE with `--permission-prompts none` so anything not allowed is
+refused. Both servers expose many more write tools than these (Atlassian's spans Confluence and Jira Service
+Management), and in an interactive FILE run any tool not allowed still prompts: decline every prompt that is not one of
+the adapter's two write tools, and give the filing identity access to the issue tracker only.
 
 ## Scheduling
 
