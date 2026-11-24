@@ -30,8 +30,6 @@ NAME = "granola"
 DEFAULT_URL = "https://mcp.granola.ai/mcp"
 # An access token this close to expiry is treated as expired: the call would race it.
 EXPIRY_SKEW_SEC = 60
-# `others` counts notes captured by someone other than the signed-in account (`captured_by_me="false"`).
-HAS_OTHERS = True
 
 
 def load_token(auth_file=None, auth_key="granola", env=None, now=None):

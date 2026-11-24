@@ -12,8 +12,8 @@ Sources, read **24 November 2026**: [List meetings](https://developers.fathom.ai
 | MCP server | `https://api.fathom.ai/mcp` (Claude Code: `claude mcp add fathom -- npx mcp-remote@latest https://api.fathom.ai/mcp`) |
 | Auth | Sign-in through the client; the method is not named in the docs. The REST API takes `X-Api-Key` or an OAuth bearer |
 | Plan | API access on all plans. A key sees meetings its user recorded or that were shared with them |
-| Meeting id | `recording_id` (an integer; write it as a string). This is the id in the state file and in card ids |
-| Meeting link | the meeting's `share_url` (or `url`); `issue.link_template` is not needed |
+| Meeting id | `recording_id`, an integer: write it **as a string** (`"123456"`) in the state file, or the pre-check fails on every tick. Also the card-id prefix |
+| Meeting link | the meeting's `share_url` (or `url`): put it on the card's *Source:* line, where FILE reads it (FILE has no Fathom tools; the link cannot be built from the id) |
 | Start time | `recording_start_time`, else `scheduled_start_time` |
 
 ## Tools
@@ -33,7 +33,7 @@ Never pass `destination_url` to those endpoints: it makes Fathom POST the conten
 
 ## Step 0 counts
 
-- `seen`: every meeting returned across all pages. Stop at 10 pages and report `status=error detail=too-many-meetings`.
+- `seen`: every meeting returned across all pages. Stop at 20 pages and report `status=error detail=too-many-meetings`.
 - `others`: report `others=unknown`. `recorded_by` names the recorder, but nothing says who the key belongs to.
 
 ## Fathom specifics
@@ -50,5 +50,5 @@ Never pass `destination_url` to those endpoints: it makes Fathom POST the conten
 FATHOM_API_KEY=... python3 scripts/precheck.py --source fathom
 ```
 
-One `GET /meetings` per page with a long-lived API key (not the agent's session). Keep that key out of the agent's
-environment. Details in `scripts/source_fathom.py`. Fathom allows 60 calls per 60 seconds per key.
+One `GET /meetings` per page (page size is not documented; more than 20 pages is a `FAIL`) with a long-lived API key,
+not the agent's session. Keep that key out of the agent's environment. Details in `scripts/source_fathom.py`. Fathom allows 60 calls per 60 seconds per key.

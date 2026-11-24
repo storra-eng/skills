@@ -207,7 +207,7 @@ class Fathom(Base):
         self.assertIn("cursor=c-2", Fake.requests[1]["path"])
 
     def test_endless_cursor_is_a_fail_not_idle(self):
-        Fake.pages = [{"limit": 1, "next_cursor": f"c-{i}", "items": [self.meeting(200 + i)]} for i in range(11)]
+        Fake.pages = [{"limit": 1, "next_cursor": f"c-{i}", "items": [self.meeting(200 + i)]} for i in range(21)]
         self.fails("too-many-pages")
 
     def test_duplicate_is_a_fail(self):

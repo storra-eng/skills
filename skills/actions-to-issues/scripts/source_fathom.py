@@ -6,7 +6,8 @@ https://developers.fathom.ai/api-reference/openapi.yaml (base `https://api.fatho
 `X-Api-Key` header, `created_after` / `created_before`, `cursor`; reply `items`, `next_cursor`, `limit`;
 each meeting's `recording_id` is an integer, with `recording_start_time`, `recording_end_time` and
 `scheduled_start_time` as date-times). The docs do not define `created_at` or say whether a meeting
-is listed before post-call processing finishes; the window filters on it as documented.
+is listed before post-call processing finishes; the window filters on it as documented. `next_cursor`
+is a required (nullable) field of the reply, so a reply without it is not understood.
 
 Credentials:
 
@@ -25,7 +26,7 @@ from precheck_lib import Fail, check_url, get_json, minutes_since, parse_iso, wi
 
 NAME = "fathom"
 DEFAULT_URL = "https://api.fathom.ai/external/v1"
-MAX_PAGES = 10   # a doubt beyond this, so wake the agent
+MAX_PAGES = 20   # the page size is not documented; beyond this is a doubt, so wake the agent
 
 
 def credentials(args, env, now):

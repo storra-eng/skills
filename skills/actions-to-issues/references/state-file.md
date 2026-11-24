@@ -4,7 +4,7 @@
 host should serialise PROPOSE and FILE (a lock, or one queue), because each reads the file, works for minutes and
 writes it back, and a stale copy written last silently undoes the other's changes. As a second line of defence, re-read
 the file immediately before writing and change only your own entries. It is the only memory the skill
-has, and `scripts/granola_precheck.py` reads its `handled` list to decide whether to wake a model at all.
+has, and `scripts/precheck.py` (or the Granola-only `granola_precheck.py`) reads its `handled` list to decide whether to wake a model at all.
 
 ```json
 {
@@ -30,6 +30,7 @@ has, and `scripts/granola_precheck.py` reads its `handled` list to decide whethe
 - The meeting-level `outcome` says how the meeting was judged; each card carries its own outcome, because the cards
   from one meeting are approved, rejected and filed independently. A meeting with no cards omits `cards`.
 - `handled` is newest first and is what the pre-check reads. A bare string is also accepted as an entry (an id).
+- Ids are always JSON strings, even when the source's id is a number (Fathom `recording_id`).
 - Every id of a meeting that arrived as several notes goes in `ids`, the processed one first.
 - `open` is the cards awaiting a decision. Add a card the moment you post it. Remove it the moment it is resolved
   (filed, or rejected). **Never remove one because it has gone quiet**: age is not a decision, and a queue nobody is
