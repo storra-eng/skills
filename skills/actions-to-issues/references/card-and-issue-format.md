@@ -46,7 +46,8 @@ The rules below use Linear's field names; the adapter maps them (a GitHub reposi
 
 - **Project: always.** Pick from the config by the surface the work lands in. If nothing fits well, propose the
   closest and say "best fit"; never create a project. Pass it **by id**.
-- **Labels: at least one**, from the config only. Never create a label.
+- **Labels: at least one**, from the config only, unless the adapter's card line allows `none` (Jira). Never create
+  a label.
 - **Priority: only when the meeting gave a reason** - a date, "urgent", "blocker", "this week". Otherwise `none`.
   Never default to Medium. A tracker without priority (GitHub) gets the reason in the description instead.
 - **Assignee: only someone the meeting named as doing it**, by id (or login) from the config. Otherwise `none`. Never "me":

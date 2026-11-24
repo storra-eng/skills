@@ -15,7 +15,7 @@ claude mcp add --transport http linear  https://mcp.linear.app/mcp
 ```
 
 For another tracker, add its server instead of Linear's and set `tracker:` in the config (URLs and sources are in
-`references/tracker-<tracker>.md`):
+`skills/actions-to-issues/references/tracker-<tracker>.md`):
 
 ```bash
 claude mcp add --transport http atlassian https://mcp.atlassian.com/v2/mcp                 # tracker: jira

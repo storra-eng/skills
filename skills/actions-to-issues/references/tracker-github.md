@@ -15,7 +15,9 @@ Used when the config says `tracker: github`.
 
 ## Read tools (PROPOSE and FILE)
 
-`search_issues`, `issue_read`, `list_issues`, `get_label`, `list_issue_types`
+`search_issues`, `issue_read`, `get_label`, `list_issue_types`
+
+Leave `list_issues` out: it lists a whole repository, and the skill only runs topic-scoped searches.
 
 ## Write tools (FILE only, one approval per call)
 

@@ -3,7 +3,7 @@ name: actions-to-issues
 description: Turn new Granola meeting notes (action items, follow-ups) into tracker issues (Linear, Jira or GitHub Issues), one human approval per issue. Use when asked to triage meeting notes, turn meeting action items into trackable work, or file follow-ups from Granola. Reads untrusted text; never files without an approval the host enforces.
 license: MIT
 compatibility: Needs the Granola MCP server and one tracker's MCP server (Linear, Jira or GitHub; see references/tracker-*.md), a host that enforces human approval before any tracker write, and Python 3 for the optional pre-check script.
-metadata: {"openclaw": {"homepage": "https://github.com/storra-eng/skills", "requires": {"bins": ["python3"], "env": ["MN2L_CONFIG", "MN2L_STATE"]}}, "mcpServers": ["granola", "linear | atlassian | github"], "optionalEnv": ["GRANOLA_ACCESS_TOKEN", "MCP_AUTH_FILE", "MCP_AUTH_SERVER", "GRANOLA_MCP_URL"], "permissions": {"read": ["granola: list_meetings, get_meetings, get_meeting_transcript", "linear: list_issues, get_issue, list_projects, list_issue_labels, list_users, list_teams", "jira: searchJiraIssuesUsingJql, getJiraIssue, getAccessibleAtlassianResources", "github: search_issues, issue_read, list_issues, get_label, list_issue_types"], "write": ["linear: save_issue, save_comment", "jira: createJiraIssue, addOrEditJiraIssueComment", "github: issue_write (method=create only), add_issue_comment"], "writeRequiresHumanApproval": true, "writeEnforcedByThisSkill": false}}
+metadata: {"openclaw": {"homepage": "https://github.com/storra-eng/skills", "requires": {"bins": ["python3"], "env": ["MN2L_CONFIG", "MN2L_STATE"]}}, "mcpServers": ["granola", "linear"], "trackerMcpServers": {"linear": "linear", "jira": "atlassian", "github": "github"}, "optionalEnv": ["GRANOLA_ACCESS_TOKEN", "MCP_AUTH_FILE", "MCP_AUTH_SERVER", "GRANOLA_MCP_URL"], "permissions": {"read": ["granola: list_meetings, get_meetings, get_meeting_transcript", "linear: list_issues, get_issue, list_projects, list_issue_labels, list_users, list_teams", "jira: searchJiraIssuesUsingJql, getJiraIssue, getAccessibleAtlassianResources", "github: search_issues, issue_read, get_label, list_issue_types"], "write": ["linear: save_issue, save_comment", "jira: createJiraIssue, addOrEditJiraIssueComment", "github: issue_write (method=create only), add_issue_comment"], "writeRequiresHumanApproval": true, "writeEnforcedByThisSkill": false}}
 ---
 
 # Meeting notes to issues
@@ -50,9 +50,10 @@ the items in the state file.
 
 ## Adapters
 
-Read the two adapter files for the configured names before anything else:
+Read the adapter files for the configured names once PROPOSE step 0 has found new work (never before that cheap
+check), and at the start of FILE. The `permissions` keys in the frontmatter are tracker names; `trackerMcpServers`
+maps each to the server name the docs register (Jira's is `atlassian`).
 
-- Note source: read references/source-<source>.md (default granola).
 - Tracker: read references/tracker-<tracker>.md (default linear).
 
 The tracker adapter names the only tracker tools you may call, which are read and which are write, and the card's
@@ -91,7 +92,8 @@ For each `APPROVED` entry, and nothing else:
 1. **Re-search the tracker** for the topic (not a title match) - someone may have filed it since the card was posted.
 2. If an existing issue plainly covers it, add a comment to that issue instead (`references/card-and-issue-format.md`,
    "Duplicates"). If unsure, file the issue and name the possible overlap in its description.
-3. Otherwise create the issue with the categorisation **from the card**, passing ids from the config (the card shows names).
+3. Otherwise create the issue with the categorisation **from the card**, passing values in the form the adapter's
+   "Calls" table says (Linear ids, GitHub names and logins, Jira keys and account ids, all from the config).
 4. Read the tool response as the adapter's "Read the response" says. If a field is missing, do not call the write tool
    again to fix it; record it and report it.
 5. Update the state file: remove the card from `open`, and set that card's outcome (`filed: <key>` or
@@ -135,7 +137,8 @@ Use `status=error` for anything you could not complete - never report `nothing-n
 
 ## The card and the test, in brief
 
-The full rules are in the references below; this is enough to run the loop if one is unavailable.
+The full rules are in the references below; this is enough to run the loop if one of them is unavailable. The tracker
+adapter is the exception: without it, stop with `detail=no-tracker-adapter`.
 
 - **New-work test** (all four, or do not propose): (1) a tracker search finds nothing that already covers it; (2) it is
   new work from this meeting, not progress on existing work ("finish", "continue", "still on"); (3) someone decided it,
