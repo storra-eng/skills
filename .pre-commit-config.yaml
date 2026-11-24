@@ -3,6 +3,6 @@
 repos:
   # Blocks new or growing files over 5,000 tokens. Shared hook (STO-1145); exemptions go in .token-budget-exempt.
   - repo: https://github.com/storra-eng/file-token-budget
-    rev: v1.0.0
+    rev: v1.0.1
     hooks:
       - id: file-token-budget
