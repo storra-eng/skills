@@ -69,7 +69,8 @@ name, deny the Linear write surface:
 }
 ```
 
-Also allow whichever tool posts the cards (for example a Slack send-message tool), and nothing broader. Run it with
+For Fireflies or Fathom, swap the `mcp__granola__*` entries for that source's read tools from
+`references/source-<name>.md`, and never allow its write tools. Also allow whichever tool posts the cards (for example a Slack send-message tool), and nothing broader. Run it with
 `--permission-prompts none` so any prompt is a denial. The deny list is a snapshot, since Linear adds tools over time:
 in an unattended run the allow list is what protects you, because anything not allowed is refused.
 

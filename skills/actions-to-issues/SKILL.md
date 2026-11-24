@@ -166,7 +166,7 @@ adapter is the exception: without it, stop with `detail=no-tracker-adapter`.
 <2-4 lines: context, the ask, what closes it>
 
 *Card:* <meeting id>-<n>
-*Source:* <meeting title>, <date>
+*Source:* <meeting title>, <date>[, <link, if the source returned one>]
 *Quote:* "<verbatim line that justifies it>"
 *Existing search:* <what you searched and found, or "no match">
 

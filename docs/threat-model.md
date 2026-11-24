@@ -59,7 +59,7 @@ exists without an approved card. On platforms without that, approximate it with 
 - A model can misjudge scope and propose a card from a personal meeting. The reviewer is the backstop.
 - A convincing injected card can still be approved by a tired human.
 - Prompt-level rules fail some of the time; model choice lowers the rate but does not remove it.
-- The Granola and tracker sessions are as powerful as the accounts behind them. Use the least-privileged accounts
+- The note-source and tracker sessions are as powerful as the accounts behind them. Use the least-privileged accounts
   you can.
 - A note-source API key (Fireflies, Fathom pre-check) does not expire on its own and reads every meeting its owner
   can see. Keep it with the scheduler, out of the agent's environment, and rotate it if that host is compromised.
