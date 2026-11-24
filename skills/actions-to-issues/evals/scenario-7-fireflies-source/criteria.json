@@ -16,7 +16,7 @@
     },
     {
       "name": "lists_with_the_source_tool",
-      "description": "The first tool call is `fireflies_get_transcripts` with a yesterday-to-today date range, not a Granola tool.",
+      "description": "The first tool call is `fireflies_get_transcripts` with `fromDate` yesterday and `toDate` today or tomorrow, not a Granola tool.",
       "max_score": 2,
       "category": "INTEGRATION"
     },

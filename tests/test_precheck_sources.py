@@ -143,6 +143,11 @@ class Fireflies(Base):
         self.assertTrue(out.startswith("OK seen=50 "))
         self.assertEqual(len(Fake.requests), 4)
 
+    def test_same_set_in_another_order_is_trusted(self):
+        first = [{"id": f"SyntheticFFp{i:03d}", "date": MS_9AM} for i in range(50)]
+        Fake.pages = [self.page(*first), self.page(), self.page(*reversed(first)), self.page()]
+        self.assertEqual(self.check()[1], 10)
+
     def test_never_ending_pages_are_a_fail_not_idle(self):
         Fake.pages = [self.page(*[{"id": f"SyntheticFFq{i:04d}", "date": MS_9AM} for i in range(n, n + 50)])
                       for n in range(0, 550, 50)]

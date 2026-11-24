@@ -13,7 +13,7 @@ Sources, read **24 November 2026**: [List meetings](https://developers.fathom.ai
 | Auth | Sign-in through the client; the method is not named in the docs. The REST API takes `X-Api-Key` or an OAuth bearer |
 | Plan | API access on all plans. A key sees meetings its user recorded or that were shared with them |
 | Meeting id | `recording_id`, an integer: write it **as a string** (`"123456"`) in the state file, or the pre-check fails on every tick. Also the card-id prefix |
-| Meeting link | the meeting's `share_url` (or `url`): put it on the card's *Source:* line, where FILE reads it (FILE has no Fathom tools; the link cannot be built from the id). Accepted host: `fathom.video` (the OpenAPI examples' host) |
+| Meeting link | the meeting's `share_url` (or `url`): put it on the card's *Source:* line, where FILE reads it (FILE has no Fathom tools; the link cannot be built from the id). Host: `fathom.video` (the OpenAPI examples' host) |
 | Start time | `recording_start_time`, else `scheduled_start_time` |
 
 ## Tools

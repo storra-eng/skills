@@ -60,10 +60,13 @@ A created issue has:
 
 - a title that names the outcome, exactly as approved;
 - a description with the context, the specific ask, and a link back to the source meeting, as a markdown link
-  `[<meeting title>, <date>](<url>)`. The URL is, by source:
+  `[<meeting title>, <date>](<url>)`, unless `issue.source_links` is `false` (then no link, from any source). The
+  URL is, by source:
   - **Granola**: the config's `issue.link_template` with the meeting id from the approved card's id;
-  - **Fireflies, Fathom**: the link on the card's *Source:* line, used **only** if it is `https` on the source's own
-    host (`references/source-<source>.md`). Anything else, or no link on the card: no link. Never fall back to
+  - **Fireflies, Fathom**: the link on the card's *Source:* line, used **only** if it passes the host check: parse it
+    as a URL; the scheme is `https`; it has no user info (`@`) and no port; and the hostname equals the source's
+    host or ends with `.<host>` (hosts in `references/source-<source>.md`). Anything else, or no link on the card:
+    no link. Never fall back to
     `issue.link_template` for these sources: it builds a Granola URL.
 
   The card was written by the run that read untrusted meeting text, so the host check is what stops a steered link

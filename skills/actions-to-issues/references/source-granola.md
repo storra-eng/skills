@@ -25,8 +25,9 @@ Source: [Granola MCP docs](https://docs.granola.ai/help-center/sharing/integrati
 - Hosts: allow the read tools by name and deny or omit the write tools in **both** phases. The skill never edits notes.
 - The docs say `list_meetings` is not shown in Claude, Claude Code, ChatGPT or Cursor, which use `search_meetings` and
   `get_meetings` instead. Use whichever is present. With `search_meetings`, page through `next_cursor`; it groups
-  the captures of one event under one id, so count every `other_ids` entry of `duplicate_recordings` in `seen` too,
-  and record those ids in the meeting's `ids` in the state file. Otherwise the pre-check, which lists every capture,
+  the captures of one event under one id, so count each distinct id once across the listed ids and every
+  `other_ids` entry of `duplicate_recordings`, and record those ids in the meeting's `ids` in the state file. `seen`
+  can still differ from the pre-check's count. Otherwise the pre-check, which lists every capture,
   finds the sibling and wakes the agent on every tick.
 - The docs list no parameters for any tool. The `list_meetings` arguments above are what the pre-check sends and the
   server accepted when last run; they are not in the docs.

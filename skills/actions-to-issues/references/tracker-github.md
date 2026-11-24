@@ -75,8 +75,8 @@ assignees and milestone with the card. **Do not call `issue_write` again to fix 
 
 An issue in a public repository is **world-readable** and indexed. The scope filter, the "quote only the justifying
 line" rule and the meeting link all matter more: meeting-note share links are often viewable by anyone with the link.
-Prefer a private repository for meeting-derived issues; for a public one, consider an empty
-`issue.link_template` and keep quotes to the minimum.
+Prefer a private repository for meeting-derived issues; for a public one, set `issue.source_links: false`
+(no meeting link from any source) and keep quotes to the minimum.
 
 ## Fallback without MCP
 

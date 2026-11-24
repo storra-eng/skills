@@ -92,9 +92,11 @@ def fetch(creds, args, env, now, rows_mode):
     items, pages = _read_all(url, headers, body_for, timeout)
     if pages > 1:
         # Offset paging over a list that changed between calls can skip a row without repeating one (a
-        # deletion ahead of the offset). A second full pass that disagrees with the first is a doubt.
+        # deletion ahead of the offset). A second full pass with a different set of ids is a doubt - which
+        # can also mean a meeting arrived between the passes; either way, wake the agent. Compared as sets:
+        # no sort order is documented, and each pass already refuses a duplicate.
         again, _ = _read_all(url, headers, body_for, timeout)
-        if [m for m, _d in again] != [m for m, _d in items]:
+        if {m for m, _d in again} != {m for m, _d in items}:
             raise Fail("page-shift (listing changed between passes)")
     rows = [(mid, minutes_since(_instant(d), now), None, None) for mid, d in items]
     return len(rows), None, rows

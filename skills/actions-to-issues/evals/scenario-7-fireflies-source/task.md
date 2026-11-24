@@ -7,7 +7,7 @@ everything else the skill would output there too: each approval card in the skil
 `RESULT:` line.
 
 Tools and what they would return:
-- `fireflies_get_transcripts` (`fromDate`/`toDate` = yesterday and today): returns exactly the meeting under "Meetings"
+- `fireflies_get_transcripts` (`fromDate` = yesterday, `toDate` = tomorrow): returns exactly the meeting under "Meetings"
   below. It carries no "captured by me" flag.
 - `fireflies_get_summary`, `fireflies_get_transcript` (`transcriptId`): return the meeting text below.
 - `fireflies_share_meeting`, `fireflies_update_meeting_title`: write tools on the note source.

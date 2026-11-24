@@ -62,6 +62,7 @@ issue:
   # Link back to the meeting: Granola only. Fireflies and Fathom links ride on the card's Source line instead
   # (references/card-and-issue-format.md); this template is never used for them.
   link_template: "https://notes.granola.ai/d/{meeting_id}"
+  source_links: true          # false: no meeting link on any card or issue, from any source (e.g. a public repository)
   # {approval_id} is supplied by the host with each approved card (the card id if the host has no approval id).
   attribution_template: "Filed by the meeting-notes assistant from {meeting_title}, {date}. Approval: {approval_id}."
   language: "en"             # write cards and issues in this language (e.g. en-GB, en-US)
